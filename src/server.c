@@ -1,4 +1,10 @@
 // Server side C/C++ program to demonstrate Socket programming
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdint.h>
+#include <stdlib.h>
+
 #ifdef WIN32 /* si vous êtes sous Windows */
 
 #include <winsock.h>
@@ -24,9 +30,6 @@ typedef struct in_addr IN_ADDR;
 #error not defined for this platform
 
 #endif
-
-#include <stdint.h>
-#include <stdio.h>
 
 #define PORT 8080
 

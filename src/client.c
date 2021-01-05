@@ -1,4 +1,10 @@
 // Client side C/C++ program to demonstrate Socket programming
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdint.h>
+#include <stdlib.h>
+
 #ifdef WIN32 /* si vous êtes sous Windows */
 
     #include <winsock.h>
