@@ -31,38 +31,75 @@
 
 #endif
 
-#define PORT 8080
-
-int main(int argc, char const *argv[])
-{
-    int sock = 0, valread;
+/**
+ * Creates a socket and return its id
+ * @param address Server's address
+ * @param port Server's port
+ * @return Socket's id
+ */
+int createSocketAndConnect(char *address, int port) {
+    int sock = 0;
     struct sockaddr_in serv_addr;
-    char *hello = "Hello from client";
-    char buffer[1024] = {0};
-    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-    {
-        printf("\n Socket creation error \n");
+
+    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+        perror("Socket creation error");
         return -1;
     }
 
     serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(PORT);
+    serv_addr.sin_port = htons(port);
 
     // Convert IPv4 and IPv6 addresses from text to binary form
-    if(inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr)<=0)
-    {
-        printf("\nInvalid address/ Address not supported \n");
+    if (inet_pton(AF_INET, address, &serv_addr.sin_addr) <= 0) {
+        perror("Invalid address/Address not supported");
         return -1;
     }
 
-    if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
-    {
-        printf("\nConnection Failed \n");
+    if (connect(sock, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
+        perror("Connection Failed");
         return -1;
     }
-    send(sock , hello , strlen(hello) , 0 );
-    printf("Hello message sent\n");
-    valread = read( sock , buffer, 1024);
-    printf("%s\n",buffer );
-    return 0;
+
+    return sock;
+}
+
+/**
+ * Send file content to given socket
+ * @param socket Socket's id
+ * @param filename Path to access the file
+ * @return
+ */
+int sendFileToSocket(int sock, const char* filename) {
+    FILE* fileptr;
+    unsigned char* buffer;
+    long filelen;
+
+    // open file in binary mode
+    fileptr = fopen(filename, "rb");
+    // jump to end of file
+    fseek(fileptr, 0, SEEK_END);
+    // get offset (used for length)
+    filelen = ftell(fileptr);
+    // go back to start of file
+    rewind(fileptr);
+
+    // allocate memory for the buffer
+    buffer = (unsigned char*) malloc(filelen * sizeof(char));
+    // write file data to buffer
+    fread(buffer, 1, filelen, fileptr);
+    // close file
+    fclose(fileptr);
+
+    send(sock, buffer, 1024, 0);
+}
+
+int main(int argc, char const *argv[]) {
+    int sock = createSocketAndConnect("127.0.0.1", 8080);
+
+    // Send message
+    sendFileToSocket(sock, argv[1]);
+
+    close(sock);
+
+    return EXIT_SUCCESS;
 }
