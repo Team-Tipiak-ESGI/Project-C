@@ -1,24 +1,23 @@
-// Client side C/C++ program to demonstrate Socket programming
 #include <stdint.h>
 #include <stdio.h>
-#include <string.h>
-#include <stdint.h>
+//#include <string.h>
+//#include <stdint.h>
 #include <stdlib.h>
 
-#ifdef WIN32 /* si vous êtes sous Windows */
+#ifdef WIN32 /* Windows */
 
-    #include <winsock.h>
+    //#include <winsock.h>
 
-#elif defined (linux) /* si vous êtes sous Linux */
+#elif defined (linux) /* Linux */
 
-    #include <sys/types.h>
+    //#include <sys/types.h>
     #include <sys/socket.h>
     #include <netinet/in.h>
     #include <arpa/inet.h>
     #include <unistd.h> /* close */
-    #include <netdb.h> /* gethostbyname */
+    //#include <netdb.h> /* gethostbyname */
 
-#else /* sinon vous êtes sur une plateforme non supportée */
+#else /* Unknown OS */
 
     #error not defined for this platform
 
@@ -32,12 +31,17 @@ enum packet_type {
     USERNAME = 0x11,
     PASSWORD = 0x12,
     PUBKEY = 0x13,
+
     FILE_ACTION = 0x20,
     CREATE_FILE = 0x21,
     EDIT_FILE = 0x22,
     DELETE_FILE = 0x23,
     READ_FILE = 0x24,
+    FILE_SIZE = 0x25,
+    FILE_NAME = 0x26,
+
     FILE_CONTENT = 0x30,
+    FILE_CLOSED = 0x40,
 };
 
 /**
@@ -83,28 +87,46 @@ int sendFileToSocket(int sock, const char* filename) {
     unsigned char* file_buffer;
     long filelen;
 
-    // TODO: Split file sending by CHUNK_SIZE
-
-    // open file in binary mode
+    // Open file in binary mode
     fileptr = fopen(filename, "rb");
-    // jump to end of file
+    // Jump to end of file
     fseek(fileptr, 0, SEEK_END);
-    // get offset (used for length)
+    // Get offset (used for length)
     filelen = ftell(fileptr);
-    // go back to start of file
+    // Go back to start of file
     rewind(fileptr);
 
-    // allocate memory for the file_buffer
-    file_buffer = (unsigned char*) malloc(filelen * sizeof(char));
-    // write file data to file_buffer
-    fread(file_buffer, 1, filelen, fileptr);
-    // close file
+    // Send file information to server
+    char* file_info = malloc(sizeof(char) * CHUNK_SIZE);
+    // File name
+    sprintf(file_info, "%c%s", FILE_NAME, filename);
+    send(sock, file_info, CHUNK_SIZE, 0);
+    // File size
+    sprintf(file_info, "%c%ld", FILE_SIZE, filelen);
+    send(sock, file_info, CHUNK_SIZE, 0);
+    // Action
+    sprintf(file_info, "%c", CREATE_FILE);
+    send(sock, file_info, CHUNK_SIZE, 0);
+
+    // Allocate memory for the file_buffer
+    file_buffer = (unsigned char*) malloc((CHUNK_SIZE - 1) * sizeof(char));
+
+    for (long i = 0; i < filelen; i += (CHUNK_SIZE - 1)) {
+        // Move cursor in file
+        fseek(fileptr, i, SEEK_SET);
+        // Write file data to file_buffer
+        fread(file_buffer, 1, (CHUNK_SIZE - 1), fileptr);
+
+        // Create request buffer
+        char* file_data = malloc(sizeof(char) * CHUNK_SIZE);
+        sprintf(file_data, "%c%s", FILE_CONTENT, file_buffer);
+
+        // Send request
+        send(sock, file_data, CHUNK_SIZE, 0);
+    }
+
+    // Close file
     fclose(fileptr);
-
-    char* buffer = malloc(sizeof(char) * CHUNK_SIZE);
-    sprintf(buffer, "%c%s", FILE_CONTENT, file_buffer);
-
-    send(sock, buffer, CHUNK_SIZE, 0);
 }
 
 /**
@@ -129,7 +151,7 @@ int main(int argc, char const *argv[]) {
     int sock = createSocketAndConnect("127.0.0.1", 8080);
 
     // Login to server
-    login(sock, "astalios", "password");
+    login(sock, "quozul", "password");
 
     // Send message
     sendFileToSocket(sock, argv[1]);

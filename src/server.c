@@ -1,26 +1,25 @@
-// Server side C/C++ program to demonstrate Socket programming
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-#include <stdint.h>
+//#include <stdint.h>
 #include <stdlib.h>
 
-#ifdef WIN32 /* si vous êtes sous Windows */
+#ifdef WIN32 /* Windows */
 
-#include <winsock.h>
+    //#include <winsock.h>
 
-#elif defined (linux) /* si vous êtes sous Linux */
+#elif defined (linux) /* Linux */
 
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <unistd.h> /* close */
-#include <netdb.h> /* gethostbyname */
+    //#include <sys/types.h>
+    #include <sys/socket.h>
+    #include <netinet/in.h>
+    //#include <arpa/inet.h>
+    #include <unistd.h> /* close */
+    #include <netdb.h> /* gethostbyname */
 
-#else /* sinon vous êtes sur une plateforme non supportée */
+#else /* Unknown OS */
 
-#error not defined for this platform
+    #error not defined for this platform
 
 #endif
 
