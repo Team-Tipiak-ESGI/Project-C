@@ -17,13 +17,6 @@
 #include <arpa/inet.h>
 #include <unistd.h> /* close */
 #include <netdb.h> /* gethostbyname */
-#define INVALID_SOCKET -1
-#define SOCKET_ERROR -1
-#define closesocket(s) close(s)
-typedef int SOCKET;
-typedef struct sockaddr_in SOCKADDR_IN;
-typedef struct sockaddr SOCKADDR;
-typedef struct in_addr IN_ADDR;
 
 #else /* sinon vous êtes sur une plateforme non supportée */
 
@@ -68,7 +61,7 @@ int main(int argc, char const *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    fputs("Server listening...", stdin);
+    printf("Server listening...\n");
 
     while (1) {
         if ((new_socket = accept(server_fd, (struct sockaddr *) &address, (socklen_t * ) & addrlen)) < 0) {
@@ -82,7 +75,9 @@ int main(int argc, char const *argv[]) {
         if (pid == 0) {
             while (1) {
                 valread = read(new_socket, buffer, 1024);
-                printf("Message from socket %d : %s\n", new_socket, buffer);
+                if (valread == 0) break;
+
+                printf("Message from socket %d (%d) : %s\n", new_socket, valread, buffer);
 
                 send(new_socket, hello, strlen(hello), 0);
             }
