@@ -24,6 +24,22 @@
 
 #endif
 
+#define CHUNK_SIZE 1024
+
+// TODO: Put this in an other file and include it
+enum packet_type {
+    LOGIN = 0x10,
+    USERNAME = 0x11,
+    PASSWORD = 0x12,
+    PUBKEY = 0x13,
+    FILE_ACTION = 0x20,
+    CREATE_FILE = 0x21,
+    EDIT_FILE = 0x22,
+    DELETE_FILE = 0x23,
+    READ_FILE = 0x24,
+    FILE_CONTENT = 0x30,
+};
+
 /**
  * Creates a socket and return its id
  * @param address Server's address
@@ -64,8 +80,10 @@ int createSocketAndConnect(char *address, int port) {
  */
 int sendFileToSocket(int sock, const char* filename) {
     FILE* fileptr;
-    unsigned char* buffer;
+    unsigned char* file_buffer;
     long filelen;
+
+    // TODO: Split file sending by CHUNK_SIZE
 
     // open file in binary mode
     fileptr = fopen(filename, "rb");
@@ -76,18 +94,42 @@ int sendFileToSocket(int sock, const char* filename) {
     // go back to start of file
     rewind(fileptr);
 
-    // allocate memory for the buffer
-    buffer = (unsigned char*) malloc(filelen * sizeof(char));
-    // write file data to buffer
-    fread(buffer, 1, filelen, fileptr);
+    // allocate memory for the file_buffer
+    file_buffer = (unsigned char*) malloc(filelen * sizeof(char));
+    // write file data to file_buffer
+    fread(file_buffer, 1, filelen, fileptr);
     // close file
     fclose(fileptr);
 
-    send(sock, buffer, 1024, 0);
+    char* buffer = malloc(sizeof(char) * CHUNK_SIZE);
+    sprintf(buffer, "%c%s", FILE_CONTENT, file_buffer);
+
+    send(sock, buffer, CHUNK_SIZE, 0);
+}
+
+/**
+ * Function to send credentials to server
+ * @param sock
+ * @param username
+ * @param password
+ */
+void login(int sock, const char* username, const char* password) {
+    char* buffer = malloc(sizeof(char) * CHUNK_SIZE);
+
+    // Send username
+    sprintf(buffer, "%c%s", USERNAME, username);
+    send(sock, buffer, CHUNK_SIZE, 0);
+
+    // Send password
+    sprintf(buffer, "%c%s", PASSWORD, password);
+    send(sock, buffer, CHUNK_SIZE, 0);
 }
 
 int main(int argc, char const *argv[]) {
     int sock = createSocketAndConnect("127.0.0.1", 8080);
+
+    // Login to server
+    login(sock, "astalios", "password");
 
     // Send message
     sendFileToSocket(sock, argv[1]);
