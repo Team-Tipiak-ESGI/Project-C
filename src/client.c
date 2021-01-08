@@ -1,14 +1,17 @@
+// TODO : faire les dossiers nessaires pour la gestion des conffiles cote user : .tucs/ conf/ pubKey/ privKey/
+// TODO : SSL - Generation de clefs
+// TODO - sub SSL - Gestion des clefs
+// TODO : Gestion des fichiers de facon dynamique
+// TODO : interface ncurses
+// TODO : login / password
+// TODO :
+
 #include <stdint.h>
 #include <stdio.h>
 //#include <string.h>
 //#include <stdint.h>
 #include <stdlib.h>
-
-#ifdef WIN32 /* Windows */
-
-    //#include <winsock.h>
-
-#elif defined (linux) /* Linux */
+#if defined (linux) /* Linux */
 
     //#include <sys/types.h>
     #include <sys/socket.h>
@@ -22,10 +25,12 @@
     #error not defined for this platform
 
 #endif
-
+// TODO : A mettre dans le fichier de config, dans le cas present, si le chunk size est modifie,
+//  il faudra envoyer au serveur la nouvelle config du CHUNK_SIZE
 #define CHUNK_SIZE 1024
 
-// TODO: Put this in an other file and include it
+// TODO : Put this in an other file and include it
+// TODO : Faire un packet pour appeller le create user
 enum packet_type {
     LOGIN = 0x10,
     USERNAME = 0x11,
@@ -105,7 +110,7 @@ int sendFileToSocket(int sock, const char* filename) {
     sprintf(file_info, "%c%ld", FILE_SIZE, filelen);
     send(sock, file_info, CHUNK_SIZE, 0);
     // Action
-    sprintf(file_info, "%c", CREATE_FILE);
+    sprintf(file_info, "%c%s", CREATE_FILE, filename);
     send(sock, file_info, CHUNK_SIZE, 0);
 
     // Allocate memory for the file_buffer
@@ -146,11 +151,17 @@ void login(int sock, const char* username, const char* password) {
     sprintf(buffer, "%c%s", PASSWORD, password);
     send(sock, buffer, CHUNK_SIZE, 0);
 }
-
+/**
+ *
+ * @param argc
+ * @param argv
+ * @return
+ */
 int main(int argc, char const *argv[]) {
-    int sock = createSocketAndConnect("127.0.0.1", 8080);
+    int sock = createSocketAndConnect("151.80.110.124", 8080);
 
     // Login to server
+    // TODO : Verification avec le serveur pour se connecter / creer un compte si inexistant
     login(sock, "quozul", "password");
 
     // Send message
