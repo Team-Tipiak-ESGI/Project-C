@@ -4,11 +4,7 @@
 //#include <stdint.h>
 #include <stdlib.h>
 
-#ifdef WIN32 /* Windows */
-
-    //#include <winsock.h>
-
-#elif defined (linux) /* Linux */
+#if defined (linux) /* Linux */
 
     //#include <sys/types.h>
     #include <sys/socket.h>
@@ -16,6 +12,10 @@
     //#include <arpa/inet.h>
     #include <unistd.h> /* close */
     #include <netdb.h> /* gethostbyname */
+
+    #include <openssl/bio.h>
+    #include <openssl/ssl.h>
+    #include <openssl/err.h>
 
 #else /* Unknown OS */
 
@@ -26,19 +26,23 @@
 #define PORT 8080
 #define CHUNK_SIZE 1024
 
-// TODO: Put this in an other file and include it
-enum packet_type {
-    LOGIN = 0x10,
-    USERNAME = 0x11,
-    PASSWORD = 0x12,
-    PUBKEY = 0x13,
-    FILE_ACTION = 0x20,
-    CREATE_FILE = 0x21,
-    EDIT_FILE = 0x22,
-    DELETE_FILE = 0x23,
-    READ_FILE = 0x24,
-    FILE_CONTENT = 0x30,
-};
+#include "PacketTypes.h"
+
+void InitializeSSL() {
+    SSL_load_error_strings();
+    SSL_library_init();
+    OpenSSL_add_all_algorithms();
+}
+
+void DestroySSL() {
+    ERR_free_strings();
+    EVP_cleanup();
+}
+
+void ShutdownSSL(SSL *cSSL) {
+    SSL_shutdown(cSSL);
+    SSL_free(cSSL);
+}
 
 /**
  * Verify if the given credentials are valid
@@ -57,64 +61,98 @@ unsigned char verifyUser(char* username, char* password) {
     return (strcmp(username, valid_username) == 0 && strcmp(password, valid_password) == 0);
 }
 
-int main(int argc, char const *argv[]) {
-    int server_fd, new_socket, valread;
+int createSSLServer() {
     struct sockaddr_in address;
+
+    int server_fd;
+
+    InitializeSSL();
+    server_fd = socket(AF_INET, SOCK_STREAM, 0);
+
     int opt = 1;
-    int addrlen = sizeof(address);
-    char buffer[1024] = {0};
-    char *hello = "Hello from server";
+    setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt));
 
-    // Creating socket file descriptor
-    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
-        perror("socket failed");
-        exit(EXIT_FAILURE);
-    }
-
-    // Forcefully attaching socket to the port 8080
-    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
+    if (server_fd < 0) {
         perror("Failed attaching socket");
         exit(EXIT_FAILURE);
     }
 
+    bzero((char *) &address, sizeof(address));
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons(PORT);
 
-    // Forcefully attaching socket to the port 8080
     if (bind(server_fd, (struct sockaddr *) &address, sizeof(address)) < 0) {
         perror("Bind failed");
         exit(EXIT_FAILURE);
     }
 
-    if (listen(server_fd, 3) < 0) {
+    if (listen(server_fd, 5) < 0) {
         perror("Listen error");
         exit(EXIT_FAILURE);
     }
 
-    printf("Server listening...\n");
+    return server_fd;
+}
 
-    while (1) {
-        if ((new_socket = accept(server_fd, (struct sockaddr *) &address, (socklen_t * ) & addrlen)) < 0) {
+int main(int argc, char const *argv[]) {
+    const int server_fd = createSSLServer();
+    fputs("Server listening...\n", stdout);
+
+    int new_socket, address, addrlen, valread;
+    char buffer[1024] = {0};
+
+    //while (1) {
+        int newsockfd;
+        SSL_CTX *sslctx;
+        SSL *cSSL;
+
+        // SSL connexion
+        int cli_addr;
+        unsigned int clilen;
+
+        newsockfd = accept(server_fd, (struct sockaddr *) &cli_addr, &clilen);
+        printf("%d\n", newsockfd);
+        if (newsockfd < 0) {
             perror("Accept error");
-            exit(EXIT_FAILURE);
         }
 
-        pid_t pid = fork();
+        fputs("New connexion...\n", stdout);
+
+        /*sslctx = SSL_CTX_new(SSLv23_server_method());
+        SSL_CTX_set_options(sslctx, SSL_OP_SINGLE_DH_USE);
+
+        int use_cert = SSL_CTX_use_certificate_file(sslctx, "/home/erwan/cert.pem", SSL_FILETYPE_PEM);
+        int use_prv = SSL_CTX_use_PrivateKey_file(sslctx, "/key.pem", SSL_FILETYPE_PEM);
+
+        cSSL = SSL_new(sslctx);
+        SSL_set_fd(cSSL, newsockfd);
+        // Here is the SSL Accept portion. Now all reads and writes must use SSL
+        int ssl_err = SSL_accept(cSSL);
+
+        if (ssl_err <= 0) {
+            // Error occurred, log and close down ssl
+            perror("SSL accept error");
+            ShutdownSSL(cSSL);
+        }*/
+
+        // Handle user packets
+
+        /*pid_t pid = fork();
 
         char* username = NULL;
         char* password = NULL;
 
-        // If fork, then listen for value
+        // If in fork, then listen for value
         if (pid == 0) {
             while (1) {
-                valread = read(new_socket, buffer, CHUNK_SIZE);
+                valread = read(ssl_err, buffer, CHUNK_SIZE);
                 if (valread == 0) break;
 
                 const char firstByte = buffer[0];
                 char* content = buffer + 1;
 
-                printf("Message from socket %d (%d) (packet type %d) : %s\n", new_socket, valread, firstByte, content);
+                printf("Message from socket %d (%d) (packet type %d) : %s\n", ssl_err, valread, firstByte, content);
 
                 switch (firstByte) {
                     case USERNAME:
@@ -138,8 +176,10 @@ int main(int argc, char const *argv[]) {
                         break;
                 }
             }
-        }
-    }
+
+            fputs("Connexion closed...\n", stdout);
+        }*/
+    //}
 
     return EXIT_SUCCESS;
 }

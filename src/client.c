@@ -20,6 +20,10 @@
     #include <unistd.h> /* close */
     //#include <netdb.h> /* gethostbyname */
 
+    #include <openssl/bio.h>
+    #include <openssl/ssl.h>
+    #include <openssl/err.h>
+
 #else /* Unknown OS */
 
     #error not defined for this platform
@@ -29,25 +33,7 @@
 //  il faudra envoyer au serveur la nouvelle config du CHUNK_SIZE
 #define CHUNK_SIZE 1024
 
-// TODO : Put this in an other file and include it
-// TODO : Faire un packet pour appeller le create user
-enum packet_type {
-    LOGIN = 0x10,
-    USERNAME = 0x11,
-    PASSWORD = 0x12,
-    PUBKEY = 0x13,
-
-    FILE_ACTION = 0x20,
-    CREATE_FILE = 0x21,
-    EDIT_FILE = 0x22,
-    DELETE_FILE = 0x23,
-    READ_FILE = 0x24,
-    FILE_SIZE = 0x25,
-    FILE_NAME = 0x26,
-
-    FILE_CONTENT = 0x30,
-    FILE_CLOSED = 0x40,
-};
+#include "PacketTypes.h"
 
 /**
  * Creates a socket and return its id
@@ -77,6 +63,14 @@ int createSocketAndConnect(char *address, int port) {
         perror("Connection Failed");
         return -1;
     }
+
+    SSL_CTX *sslctx;
+    SSL *cSSL;
+    sslctx = SSL_CTX_new(SSLv23_server_method());
+    SSL_CTX_set_options(sslctx, SSL_OP_SINGLE_DH_USE);
+
+    cSSL = SSL_new(sslctx);
+    SSL_set_fd(cSSL, sock);
 
     return sock;
 }
@@ -151,21 +145,16 @@ void login(int sock, const char* username, const char* password) {
     sprintf(buffer, "%c%s", PASSWORD, password);
     send(sock, buffer, CHUNK_SIZE, 0);
 }
-/**
- *
- * @param argc
- * @param argv
- * @return
- */
+
 int main(int argc, char const *argv[]) {
-    int sock = createSocketAndConnect("151.80.110.124", 8080);
+    int sock = createSocketAndConnect("127.0.0.1", 8080);
 
     // Login to server
     // TODO : Verification avec le serveur pour se connecter / creer un compte si inexistant
-    login(sock, "quozul", "password");
+    /*login(sock, "quozul", "password");
 
     // Send message
-    sendFileToSocket(sock, argv[1]);
+    sendFileToSocket(sock, argv[1]);*/
 
     close(sock);
 
