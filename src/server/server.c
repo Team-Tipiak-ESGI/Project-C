@@ -1,11 +1,7 @@
-#include <stdint.h>
 #include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
 
 #if defined (linux) /* Linux */
 
-    #include <sys/types.h>
     #include <sys/socket.h>
     #include <netinet/in.h>
     #include <arpa/inet.h>
@@ -32,20 +28,27 @@ void servlet(SSL *ssl) {
     char buf[1024];
     char reply[1024];
     int sd, bytes;
-    const char *echo = "Hello";
 
     if (SSL_accept(ssl) < 0) {     /* do SSL-protocol accept */
         ERR_print_errors_fp(stderr);
     } else {
-        bytes = SSL_read(ssl, buf, sizeof(buf)); /* get request */
-        if (bytes > 0) {
+        while (1) {
+            bytes = SSL_read(ssl, buf, sizeof(buf)); /* get request */
+            if (bytes > 0) {
+                printf("Client msg: \"%s\"\n", buf);
+            } else {
+                break;
+            }
+        }
+
+        /*if (bytes > 0) {
             buf[bytes] = 0;
             printf("Client msg: \"%s\"\n", buf);
-            sprintf(reply, "Hello OK", buf);   /* construct reply */
-            SSL_write(ssl, reply, strlen(reply)); /* send reply */
+            sprintf(reply, "Hello OK", buf);   // construct reply
+            SSL_write(ssl, reply, strlen(reply)); // send reply
         } else {
             ERR_print_errors_fp(stderr);
-        }
+        }*/
     }
 
     sd = SSL_get_fd(ssl);       /* get socket connection */
