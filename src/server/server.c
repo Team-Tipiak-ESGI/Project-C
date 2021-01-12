@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #if defined (linux) /* Linux */
 
@@ -27,6 +29,7 @@
 void servlet(SSL *ssl) {
     char buf[1024];
     char reply[1024];
+    char buffer[CHUNK_SIZE];
     int sd, bytes;
 
     if (SSL_accept(ssl) < 0) {     /* do SSL-protocol accept */
@@ -34,10 +37,34 @@ void servlet(SSL *ssl) {
     } else {
         while (1) {
             bytes = SSL_read(ssl, buf, sizeof(buf)); /* get request */
-            if (bytes > 0) {
-                printf("Client msg: \"%s\"\n", buf);
-            } else {
-                break;
+
+            if (bytes == 0) break;
+
+            const char firstByte = buffer[0];
+            char* content = buffer + 1;
+
+            printf("Message from socket %d (%d) (packet type %d) : %s\n", new_socket, bytes, firstByte, content);
+
+            switch (firstByte) {
+                case USERNAME:
+                    // Copy username to variable
+                    username = malloc(sizeof(char) * strlen(content));
+                    strncpy(username, content, strlen(content));
+                    break;
+                case PASSWORD:
+                    // Copy password to variable
+                    password = malloc(sizeof(char) * strlen(content));
+                    strncpy(password, content, strlen(content));
+                    break;
+                case FILE_CONTENT:
+                    if (verifyUser(username, password)) {
+                        printf("User %s sent file data\n", username);
+                    } else {
+                        printf("User is not logged in!\n");
+                    }
+                    break;
+                default:
+                    break;
             }
         }
 
