@@ -20,10 +20,15 @@
 #define CHUNK_SIZE 1024
 
 #include "../shared/PacketTypes.h"
+#include "configuration.h"
 #include "connection.h"
 #include "serve.h"
 
 int main(int argc, char ** argv) {
+    SERVER_CONFIGURATION serverConfiguration;
+    serverConfiguration.port = 8080;
+    serverConfiguration.root_dir = "/home/erwan/tucs_server/";
+
     SSL_CTX *ctx;
     int server;
 
@@ -55,7 +60,7 @@ int main(int argc, char ** argv) {
 
         if (pid == 0) {
             // If in fork
-            servlet(ssl);         /* service connection */
+            servlet(ssl, serverConfiguration);         /* service connection */
         }
     }
 
