@@ -21,88 +21,9 @@
 
 #include "../shared/PacketTypes.h"
 #include "connection.h"
+#include "serve.h"
 
-/**
- * Verify if the given credentials are valid
- * @param username
- * @param password
- * @return 1 if valid, 0 if not
- */
-unsigned char verifyUser(char* username, char* password) {
-    if (username == NULL && password == NULL) {
-        return 0;
-    }
-
-    // TODO: Verify using values in database
-    const char* valid_username = "quozul\0";
-    const char* valid_password = "password\0";
-
-    return (strcmp(username, valid_username) == 0 && strcmp(password, valid_password) == 0);
-}
-
-/**
- * Serve the connection
- * @param ssl
- */
-void servlet(SSL *ssl) {
-    char buffer[CHUNK_SIZE];
-    int sd, bytes;
-
-    if (SSL_accept(ssl) < 0) {     /* do SSL-protocol accept */
-        ERR_print_errors_fp(stderr);
-    } else {
-        char* username;
-        char* password;
-
-        while (1) {
-            bytes = SSL_read(ssl, buffer, 1024); /* get request */
-
-            if (bytes == 0) break;
-
-            const char firstByte = buffer[0];
-            char* content = buffer + 1;
-
-            printf("Message from socket (%d) (packet type: %d) : %s\n", bytes, firstByte, content);
-
-            switch (firstByte) {
-                case USERNAME:
-                    // Copy username to variable
-                    username = malloc(sizeof(char) * strlen(content));
-                    strncpy(username, content, strlen(content));
-                    break;
-                case PASSWORD:
-                    // Copy password to variable
-                    password = malloc(sizeof(char) * strlen(content));
-                    strncpy(password, content, strlen(content));
-                    break;
-                case FILE_CONTENT:
-                    if (verifyUser(username, password)) {
-                        printf("User %s sent file data\n", username);
-                    } else {
-                        printf("User is not logged in!\n");
-                    }
-                    break;
-                default:
-                    break;
-            }
-        }
-
-        /*if (bytes > 0) {
-            buffer[bytes] = 0;
-            printf("Client msg: \"%s\"\n", buffer);
-            sprintf(reply, "Hello OK", buffer);   // construct reply
-            SSL_write(ssl, reply, strlen(reply)); // send reply
-        } else {
-            ERR_print_errors_fp(stderr);
-        }*/
-    }
-
-    sd = SSL_get_fd(ssl);       /* get socket connection */
-    SSL_free(ssl);         /* release SSL state */
-    close(sd);          /* close connection */
-}
-
-int main() {
+int main(int argc, char ** argv) {
     SSL_CTX *ctx;
     int server;
 
@@ -125,6 +46,7 @@ int main() {
         SSL *ssl;
 
         int client = accept(server, (struct sockaddr *) &addr, &len);  /* accept connection as usual */
+        // TODO: Log connections to a file
         printf("Connection from: %s:%d\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
         ssl = SSL_new(ctx);              /* get new SSL state with context */
         SSL_set_fd(ssl, client);      /* set connection socket to SSL state */

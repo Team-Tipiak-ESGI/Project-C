@@ -1,5 +1,15 @@
 # Projet-C Cloud et Partage de fichiers
 
+# Compilation
+- Installer les dépendances avec la commande suivante :
+```sh
+sudo apt install libncurses5-dev libncursesw5-dev libssl-dev gcc cmake
+```
+- Compiler avec :
+```sh
+cmake CMakeLists.txt
+```
+
 # Fonctionnalités
 
 ## MVP
