@@ -36,13 +36,13 @@ int sendFileToSocket(SSL *ssl, const char* filename) {
 
     // File name
     sprintf(msg, "%c%s", FILE_NAME, filename);
-    SSL_write(ssl, msg, strlen(msg));   /* encrypt & send message */
+    SSL_write(ssl, msg, CHUNK_SIZE);   /* encrypt & send message */
     // File size
     sprintf(msg, "%c%ld", FILE_SIZE, filelen);
-    SSL_write(ssl, msg, strlen(msg));   /* encrypt & send message */
+    SSL_write(ssl, msg, CHUNK_SIZE);   /* encrypt & send message */
     // Action
     sprintf(msg, "%c%s", CREATE_FILE, filename);
-    SSL_write(ssl, msg, strlen(msg));   /* encrypt & send message */
+    SSL_write(ssl, msg, CHUNK_SIZE);   /* encrypt & send message */
 
     free(msg);
 
@@ -60,7 +60,7 @@ int sendFileToSocket(SSL *ssl, const char* filename) {
         sprintf(file_data, "%c%s", FILE_CONTENT, file_buffer);
 
         // Send request
-        SSL_write(ssl, file_data, strlen(file_data));
+        SSL_write(ssl, file_data, CHUNK_SIZE);
         free(file_data);
     }
 
@@ -72,18 +72,18 @@ int sendFileToSocket(SSL *ssl, const char* filename) {
 
 /**
  * Function to send credentials to server
- * @param sock
+ * @param ssl
  * @param username
  * @param password
  */
-void login(int sock, const char* username, const char* password) {
+void login(SSL *ssl, const char* username, const char* password) {
     char* buffer = malloc(sizeof(char) * CHUNK_SIZE);
 
     // Send username
     sprintf(buffer, "%c%s", USERNAME, username);
-    send(sock, buffer, CHUNK_SIZE, 0);
+    SSL_write(ssl, buffer, CHUNK_SIZE);
 
     // Send password
     sprintf(buffer, "%c%s", PASSWORD, password);
-    send(sock, buffer, CHUNK_SIZE, 0);
+    SSL_write(ssl, buffer, CHUNK_SIZE);
 }

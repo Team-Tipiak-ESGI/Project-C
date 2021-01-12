@@ -19,11 +19,13 @@ int openConnection(const char *hostname, int port) {
         perror(hostname);
         abort();
     }
+
     sd = socket(PF_INET, SOCK_STREAM, 0);
     bzero(&addr, sizeof(addr));
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
     addr.sin_addr.s_addr = *(long *) (host->h_addr);
+
     if (connect(sd, (struct sockaddr *) &addr, sizeof(addr)) != 0) {
         close(sd);
         perror(hostname);
@@ -40,9 +42,11 @@ SSL_CTX *initCTX(void) {
     SSL_load_error_strings();   /* Bring in and register error messages */
     method = SSLv23_client_method();  /* Create new client-method instance */
     ctx = SSL_CTX_new(method);   /* Create new context */
+
     if (ctx == NULL) {
         ERR_print_errors_fp(stderr);
         abort();
     }
+
     return ctx;
 }

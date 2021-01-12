@@ -23,27 +23,46 @@
 #include "connection.h"
 
 /**
+ * Verify if the given credentials are valid
+ * @param username
+ * @param password
+ * @return 1 if valid, 0 if not
+ */
+unsigned char verifyUser(char* username, char* password) {
+    if (username == NULL && password == NULL) {
+        return 0;
+    }
+
+    // TODO: Verify using values in database
+    const char* valid_username = "quozul\0";
+    const char* valid_password = "password\0";
+
+    return (strcmp(username, valid_username) == 0 && strcmp(password, valid_password) == 0);
+}
+
+/**
  * Serve the connection
  * @param ssl
  */
 void servlet(SSL *ssl) {
-    char buf[1024];
-    char reply[1024];
     char buffer[CHUNK_SIZE];
     int sd, bytes;
 
     if (SSL_accept(ssl) < 0) {     /* do SSL-protocol accept */
         ERR_print_errors_fp(stderr);
     } else {
+        char* username;
+        char* password;
+
         while (1) {
-            bytes = SSL_read(ssl, buf, sizeof(buf)); /* get request */
+            bytes = SSL_read(ssl, buffer, 1024); /* get request */
 
             if (bytes == 0) break;
 
             const char firstByte = buffer[0];
             char* content = buffer + 1;
 
-            printf("Message from socket %d (%d) (packet type %d) : %s\n", new_socket, bytes, firstByte, content);
+            printf("Message from socket (%d) (packet type: %d) : %s\n", bytes, firstByte, content);
 
             switch (firstByte) {
                 case USERNAME:
@@ -69,9 +88,9 @@ void servlet(SSL *ssl) {
         }
 
         /*if (bytes > 0) {
-            buf[bytes] = 0;
-            printf("Client msg: \"%s\"\n", buf);
-            sprintf(reply, "Hello OK", buf);   // construct reply
+            buffer[bytes] = 0;
+            printf("Client msg: \"%s\"\n", buffer);
+            sprintf(reply, "Hello OK", buffer);   // construct reply
             SSL_write(ssl, reply, strlen(reply)); // send reply
         } else {
             ERR_print_errors_fp(stderr);

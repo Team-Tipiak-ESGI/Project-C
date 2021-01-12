@@ -43,11 +43,11 @@ int main(int argc, char** argv) {
     if (SSL_connect(ssl) < 0) {   /* perform the connection */
         ERR_print_errors_fp(stderr);
     } else {
-        char *msg = "Hello";
-
         printf("Connected with %s encryption\n", SSL_get_cipher(ssl));
 
-        sendFileToSocket(ssl, argv[1]);
+        login(ssl, argv[1], argv[2]);
+
+        sendFileToSocket(ssl, argv[3]);
 
         SSL_free(ssl);        /* release connection state */
     }
