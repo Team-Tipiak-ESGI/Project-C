@@ -33,16 +33,26 @@ int main(void) {
     int server;
 
     // TODO: Put cert files in config file
-    char CertFile[] = "/home/erwan/cert.pem";
-    char KeyFile[] = "/home/erwan/key.pem";
+    char currentDirectory[1024] = {0};
+    getcwd(currentDirectory, 1024);
+
+    char certFile[1024] = {0};
+    strcpy(certFile, currentDirectory);
+    strcat(certFile, "/resources/server.cert");
+
+    char keyFile[1024] = {0};
+    strcpy(keyFile, currentDirectory);
+    strcat(keyFile, "/resources/server.key");
 
     SSL_library_init();
 
     ctx = initServerCTX();        /* initialize SSL */
-    loadCertificates(ctx, CertFile, KeyFile); /* load certs */
+    loadCertificates(ctx, certFile, keyFile); /* load certs */
 
     // TODO: Put port in config file
     server = openListener(PORT);    /* create server socket */
+
+    printf("Server listening...\n");
 
     // Main loop
     while (1) {

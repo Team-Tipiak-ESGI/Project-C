@@ -7,11 +7,13 @@ sudo apt install libncurses5-dev libncursesw5-dev libmongoc-dev libbson-dev libs
 ```
 - Compiler avec :
 ```sh
+cd TUCS_directory
 cmake CMakeLists.txt
 ```
 - Générer un certificat ssl avec
 ```sh
-openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365
+cd TUCS_directory
+openssl req  -nodes -new -x509 -keyout resources/server.key -out resources/server.cert
 ```
 - Installer une base de données MongoDB
 

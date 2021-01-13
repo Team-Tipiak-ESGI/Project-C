@@ -12,3 +12,5 @@ target_compile_options(TUCS_server PRIVATE -Wall -Wextra -pedantic -Werror)
 find_package(OpenSSL REQUIRED)
 target_link_libraries(TUCS_server OpenSSL::SSL)
 target_link_libraries(TUCS_client OpenSSL::SSL)
+
+file(COPY resources DESTINATION .)
