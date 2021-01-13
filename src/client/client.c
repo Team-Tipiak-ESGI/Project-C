@@ -27,11 +27,11 @@
 
 
 int main(int argc, char** argv) {
+    printf("%d\n", argc);
+    
     SSL_CTX *ctx;
     int server;
     SSL *ssl;
-    char buf[1024];
-    int bytes;
 
     SSL_library_init();
 

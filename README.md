@@ -3,12 +3,17 @@
 # Compilation
 - Installer les dépendances avec la commande suivante :
 ```sh
-sudo apt install libncurses5-dev libncursesw5-dev libssl-dev gcc cmake
+sudo apt install libncurses5-dev libncursesw5-dev libmongoc-dev libbson-dev libssl-dev gcc cmake openssl
 ```
 - Compiler avec :
 ```sh
 cmake CMakeLists.txt
 ```
+- Générer un certificat ssl avec
+```sh
+openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365
+```
+- Installer une base de données MongoDB
 
 # Fonctionnalités
 

@@ -27,7 +27,6 @@ int openConnection(const char *hostname, int port) {
     addr.sin_addr.s_addr = *(long *) (host->h_addr);
 
     if (connect(sd, (struct sockaddr *) &addr, sizeof(addr)) != 0) {
-        close(sd);
         perror(hostname);
         abort();
     }

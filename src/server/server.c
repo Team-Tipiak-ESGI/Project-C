@@ -24,7 +24,7 @@
 #include "connection.h"
 #include "serve.h"
 
-int main(int argc, char ** argv) {
+int main(void) {
     SERVER_CONFIGURATION serverConfiguration;
     serverConfiguration.port = 8080;
     serverConfiguration.root_dir = "/home/erwan/tucs_server/";

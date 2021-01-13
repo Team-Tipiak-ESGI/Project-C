@@ -17,7 +17,7 @@
  * @param filename Path to access the file
  * @return
  */
-int sendFileToSocket(SSL *ssl, const char* filename) {
+void sendFileToSocket(SSL *ssl, const char* filename) {
     FILE* fileptr;
     unsigned char* file_buffer;
     long filelen;

@@ -39,7 +39,7 @@ FILE* createFile(const char* username, const char* password, const char* file_na
     char * file_path;
     char * temp = malloc(1024);
 
-    unsigned char * hash_input = malloc(1024);
+    char * hash_input = malloc(1024);
     unsigned char hashed_output[20];
     FILE * file;
 
@@ -54,7 +54,7 @@ FILE* createFile(const char* username, const char* password, const char* file_na
 
     strcat(hash_input, file_name);
 
-    SHA1(hash_input, strlen(hash_input), hashed_output);
+    SHA1((const unsigned char*)hash_input, strlen(hash_input), hashed_output);
 
     // Convert SHA to hex string
     char hex[3];
@@ -96,7 +96,6 @@ void servlet(SSL *ssl, SERVER_CONFIGURATION serverConfiguration) {
         FILE* workingOnFile;
         int data_size = 0;
         int chunk_sent = 0;
-        char* filePath;
         char* hashed_name = malloc(1024);
 
         while (1) {
