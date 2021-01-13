@@ -51,9 +51,9 @@ SSL_CTX *initServerCTX(void) {
     return ctx;
 }
 
-void loadCertificates(SSL_CTX *ctx, char *CertFile, char *KeyFile) {
+void loadCertificates(SSL_CTX *ctx, char *certFile, char *keyFile) {
     //New lines
-    if (SSL_CTX_load_verify_locations(ctx, CertFile, KeyFile) != 1) {
+    if (SSL_CTX_load_verify_locations(ctx, certFile, keyFile) != 1) {
         ERR_print_errors_fp(stderr);
     }
 
@@ -62,14 +62,14 @@ void loadCertificates(SSL_CTX *ctx, char *CertFile, char *KeyFile) {
     }
     //End new lines
 
-    /* set the local certificate from CertFile */
-    if (SSL_CTX_use_certificate_file(ctx, CertFile, SSL_FILETYPE_PEM) <= 0) {
+    /* set the local certificate from certFile */
+    if (SSL_CTX_use_certificate_file(ctx, certFile, SSL_FILETYPE_PEM) <= 0) {
         ERR_print_errors_fp(stderr);
         abort();
     }
 
-    /* set the private key from KeyFile (may be the same as CertFile) */
-    if (SSL_CTX_use_PrivateKey_file(ctx, KeyFile, SSL_FILETYPE_PEM) <= 0) {
+    /* set the private key from keyFile (may be the same as certFile) */
+    if (SSL_CTX_use_PrivateKey_file(ctx, keyFile, SSL_FILETYPE_PEM) <= 0) {
         ERR_print_errors_fp(stderr);
         abort();
     }

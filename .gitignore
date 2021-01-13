@@ -2,3 +2,6 @@
 cmake-build-debug
 build
 CMakeFiles
+cmake-build-debug
+cmake-build-release
+.CMakeLists.txt.swp

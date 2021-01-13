@@ -18,18 +18,18 @@
  * @return
  */
 void sendFileToSocket(SSL *ssl, const char* filename) {
-    FILE* fileptr;
-    unsigned char* file_buffer;
-    long filelen;
+    FILE* filePtr;
+    unsigned char* fileBuffer;
+    long fileLength;
 
     // Open file in binary mode
-    fileptr = fopen(filename, "rb");
+    filePtr = fopen(filename, "rb");
     // Jump to end of file
-    fseek(fileptr, 0, SEEK_END);
+    fseek(filePtr, 0, SEEK_END);
     // Get offset (used for length)
-    filelen = ftell(fileptr);
+    fileLength = ftell(filePtr);
     // Go back to start of file
-    rewind(fileptr);
+    rewind(filePtr);
 
     // Send file information to server
     char* msg = malloc(sizeof(char) * CHUNK_SIZE);
@@ -38,7 +38,7 @@ void sendFileToSocket(SSL *ssl, const char* filename) {
     sprintf(msg, "%c%s", FILE_NAME, filename);
     SSL_write(ssl, msg, CHUNK_SIZE);   /* encrypt & send message */
     // File size
-    sprintf(msg, "%c%ld", FILE_SIZE, filelen);
+    sprintf(msg, "%c%ld", FILE_SIZE, fileLength);
     SSL_write(ssl, msg, CHUNK_SIZE);   /* encrypt & send message */
     // Action
     sprintf(msg, "%c%s", CREATE_FILE, filename);
@@ -46,28 +46,28 @@ void sendFileToSocket(SSL *ssl, const char* filename) {
 
     free(msg);
 
-    // Allocate memory for the file_buffer
-    file_buffer = (unsigned char*) malloc((CHUNK_SIZE - 1) * sizeof(char));
+    // Allocate memory for the fileBuffer
+    fileBuffer = (unsigned char*) malloc((CHUNK_SIZE - 1) * sizeof(char));
 
-    for (long i = 0; i < filelen; i += (CHUNK_SIZE - 1)) {
+    for (long i = 0; i < fileLength; i += (CHUNK_SIZE - 1)) {
         // Move cursor in file
-        fseek(fileptr, i, SEEK_SET);
-        // Write file data to file_buffer
-        fread(file_buffer, 1, (CHUNK_SIZE - 1), fileptr);
+        fseek(filePtr, i, SEEK_SET);
+        // Write file data to fileBuffer
+        fread(fileBuffer, 1, (CHUNK_SIZE - 1), filePtr);
 
         // Create request buffer
-        char* file_data = malloc(sizeof(char) * CHUNK_SIZE);
-        sprintf(file_data, "%c%s", FILE_CONTENT, file_buffer);
+        char* fileData = malloc(sizeof(char) * CHUNK_SIZE);
+        sprintf(fileData, "%c%s", FILE_CONTENT, fileBuffer);
 
         // Send request
-        SSL_write(ssl, file_data, CHUNK_SIZE);
-        free(file_data);
+        SSL_write(ssl, fileData, CHUNK_SIZE);
+        free(fileData);
     }
 
-    free(file_buffer);
+    free(fileBuffer);
 
     // Close file
-    fclose(fileptr);
+    fclose(filePtr);
 }
 
 /**
