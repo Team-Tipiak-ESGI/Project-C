@@ -14,6 +14,7 @@
 #include "../shared/PacketTypes.h"
 #include "../shared/hash.h"
 #include "ServerConfiguration.h"
+#include "Client.h"
 #define CHUNK_SIZE 1024
 
 /**
@@ -84,19 +85,15 @@ FILE* createFile(const char* username, const char* password, const char* fileNam
  * Serve the connection
  * @param ssl
  */
-void servlet(SSL *ssl, ServerConfiguration serverConfiguration) {
+void servlet(SSL *ssl, ServerConfiguration server) {
     char buffer[CHUNK_SIZE];
     int sd, bytes;
 
     if (SSL_accept(ssl) < 0) {     /* do SSL-protocol accept */
         ERR_print_errors_fp(stderr);
     } else {
-        char* username;
-        char* password;
-        FILE* workingOnFile;
-        int dataSize = 0;
-        int chunkSent = 0;
-        char* hashedName = malloc(1024);
+        Client client;
+        client.chunkSent = 0;
 
         while (1) {
             bytes = SSL_read(ssl, buffer, 1024); /* get request */
@@ -111,40 +108,40 @@ void servlet(SSL *ssl, ServerConfiguration serverConfiguration) {
             switch (firstByte) {
                 case USERNAME:
                     // Copy username to variable
-                    username = malloc(sizeof(char) * strlen(content));
-                    strncpy(username, content, strlen(content));
+                    client.username = malloc(sizeof(char) * strlen(content));
+                    strncpy(client.username, content, strlen(content));
                     break;
 
                 case PASSWORD:
                     // Copy password to variable
-                    password = malloc(sizeof(char) * strlen(content));
-                    strncpy(password, content, strlen(content));
+                    client.password = malloc(sizeof(char) * strlen(content));
+                    strncpy(client.password, content, strlen(content));
                     break;
 
                 case CREATE_FILE:
-                    workingOnFile = createFile(username, password, content, serverConfiguration.rootDir);
+                    client.file = createFile(client.username, client.password, content, server.rootDir);
                     printf("File opened\n");
                     break;
 
                 case FILE_SIZE:
-                    dataSize = atoi(content);
-                    printf("File size is %d\n", dataSize);
+                    client.fileSize = strtol(content, NULL, 10);
+                    printf("File size is %d\n", client.fileSize);
                     break;
 
                 case FILE_CONTENT:
-                    if (verifyUser(username, password)) {
-                        if (workingOnFile != NULL) {
+                    if (verifyUser(client.username, client.password)) {
+                        if (client.file != NULL) {
                             // Append to file
-                            fputs(content, workingOnFile);
+                            fputs(content, client.file);
                             printf("Data written\n");
 
-                            if (++chunkSent >= dataSize / CHUNK_SIZE) {
+                            if (++client.chunkSent >= client.fileSize / CHUNK_SIZE) {
                                 printf("File sending is done\n");
-                                fclose(workingOnFile);
+                                fclose(client.file);
                             }
                         }
 
-                        printf("User %s sent file data\n", username);
+                        printf("User %s sent file data\n", client.username);
                     } else {
                         printf("User is not logged in!\n");
                     }
@@ -160,10 +157,6 @@ void servlet(SSL *ssl, ServerConfiguration serverConfiguration) {
                     break;
             }
         }
-
-        free(username);
-        free(password);
-        free(hashedName);
     }
 
     sd = SSL_get_fd(ssl);       /* get socket connection */
