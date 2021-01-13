@@ -22,8 +22,8 @@
 #define CHUNK_SIZE 1024
 
 #include "../shared/PacketTypes.h"
-#include "connection.h"
-#include "sendFile.h"
+#include "Connection.h"
+#include "SendFile.h"
 
 
 int main(int argc, char** argv) {
