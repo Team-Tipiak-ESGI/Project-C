@@ -19,7 +19,7 @@
 
 #endif
 
-#define CHUNK_SIZE 1024
+#include "../shared/ChunkSize.h"
 
 #include "../shared/PacketTypes.h"
 #include "Connection.h"

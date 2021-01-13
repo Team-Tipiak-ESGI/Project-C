@@ -1,12 +1,3 @@
-//
-// Created by erwan on 2021-01-10.
-//
-
-#ifndef PROJECT_C_PACKETTYPES_H
-#define PROJECT_C_PACKETTYPES_H
-
-#endif //PROJECT_C_PACKETTYPES_H
-
 enum packet_type {
     LOGIN = 0x10,
     USERNAME = 0x11,
@@ -26,4 +17,6 @@ enum packet_type {
 
     FILE_CONTENT = 0x30,
     FILE_CLOSED = 0x40,
+
+    CHUNK_RECEIVED = 0x50,
 };

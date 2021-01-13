@@ -1,8 +1,9 @@
 typedef struct {
     char* username;
     char* password;
+    char* filePath;
     FILE* file;
     int fileSize;
     int chunkSent;
-    char* hashedFileName;
+    int chunkSize;
 } Client;

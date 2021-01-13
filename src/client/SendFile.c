@@ -9,7 +9,7 @@
 
 // TODO : A mettre dans le fichier de config, dans le cas present, si le chunk size est modifie,
 //  il faudra envoyer au serveur la nouvelle config du CHUNK_SIZE
-#define CHUNK_SIZE 1024
+#include "../shared/ChunkSize.h"
 
 /**
  * Send file content to given socket
@@ -21,6 +21,8 @@ void sendFileToSocket(SSL *ssl, const char* filename) {
     FILE* filePtr;
     unsigned char* fileBuffer;
     long fileLength;
+
+    char readBuffer[CHUNK_SIZE];
 
     // Open file in binary mode
     filePtr = fopen(filename, "rb");
@@ -61,6 +63,14 @@ void sendFileToSocket(SSL *ssl, const char* filename) {
 
         // Send request
         SSL_write(ssl, fileData, CHUNK_SIZE);
+        printf("Chunk sent, waiting server confirmation\n");
+
+        do {
+            SSL_read(ssl, readBuffer, CHUNK_SIZE);
+        } while(readBuffer[0] != CHUNK_RECEIVED);
+
+        printf("Chunk received by server!\n");
+
         free(fileData);
     }
 

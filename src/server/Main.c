@@ -17,7 +17,7 @@
 #endif
 
 #define PORT 8080
-#define CHUNK_SIZE 1024
+#include "../shared/ChunkSize.h"
 
 #include "../shared/PacketTypes.h"
 #include "ServerConfiguration.h"

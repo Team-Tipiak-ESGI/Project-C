@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <pthread.h>
 
 #include <unistd.h> /* close */
 #include <netdb.h> /* gethostbyname */
@@ -12,10 +14,9 @@
 #include <openssl/md5.h>
 
 #include "../shared/PacketTypes.h"
-#include "../shared/hash.h"
+#include "../shared/ChunkSize.h"
 #include "ServerConfiguration.h"
 #include "Client.h"
-#define CHUNK_SIZE 1024
 
 /**
  * Verify if the given credentials are valid
@@ -35,14 +36,31 @@ unsigned char verifyUser(char* username, char* password) {
     return (strcmp(username, validUsername) == 0 && strcmp(password, validPassword) == 0);
 }
 
-FILE* createFile(const char* username, const char* password, const char* fileName, const char* rootDir) {
+// TODO: Save file's chunks in a folder
+//   (folder) a7e9fb
+//     - (file) 1 (← this is the chunk number)
+//     - (file) 2
+//     - (file) 3
+// TODO: Save file's information in the database
+//   - owner
+//   - chunk count
+//   - chunk size
+
+/**
+ * Create a folder to store all file's chunks
+ * @param username Username of the owner
+ * @param password Password of the owner (should be hashed)
+ * @param fileName Send file name by the client
+ * @param rootDir Directory to store files from server's configuration
+ * @return Path of the folder which should contain all the chunks of the file
+ */
+char* createFile(const char* username, const char* password, const char* fileName, const char* rootDir) {
     char hashedName[40] = {0};
     char * filePath;
     char * temp = malloc(1024);
 
     char * hashInput = malloc(1024);
     unsigned char hashedOutput[20];
-    FILE * file;
 
     // Generate hashed name for the file, should be unique
     strcpy(temp, username);
@@ -52,6 +70,8 @@ FILE* createFile(const char* username, const char* password, const char* fileNam
     strcpy(temp, password);
     strtok(temp, "\0");
     strcat(hashInput, temp);
+
+    free(temp);
 
     strcat(hashInput, fileName);
 
@@ -69,16 +89,33 @@ FILE* createFile(const char* username, const char* password, const char* fileNam
     strcpy(filePath, rootDir);
     strcat(filePath, hashedName);
 
-    // Delete existing file
-    remove(filePath);
+    // Create directory if not exists
+    struct stat st = {0};
 
-    // Open file
-    file = fopen(filePath, "ab+");
+    if (stat(filePath, &st) == -1) {
+        mkdir(filePath, 0700);
+    }
 
-    free(filePath);
-    free(temp);
+    return filePath;
+}
 
-    return file;
+void writeChunk(const char* originalFilePath, const char* content, const int chunkNumber) {
+    char chunkId[12];
+    char filePath[1024];
+    sprintf(chunkId, "%d", chunkNumber);
+
+    strcpy(filePath, originalFilePath);
+    strcat(filePath, "/");
+    strcat(filePath, chunkId);
+
+    printf("%s\n", filePath);
+
+    FILE* file = fopen(filePath, "wb+");
+
+    fputs(content, file);
+    printf("Data written\n");
+
+    fclose(file);
 }
 
 /**
@@ -87,6 +124,7 @@ FILE* createFile(const char* username, const char* password, const char* fileNam
  */
 void servlet(SSL *ssl, ServerConfiguration server) {
     char buffer[CHUNK_SIZE];
+    char writeBuffer[CHUNK_SIZE];
     int sd, bytes;
 
     if (SSL_accept(ssl) < 0) {     /* do SSL-protocol accept */
@@ -96,7 +134,7 @@ void servlet(SSL *ssl, ServerConfiguration server) {
         client.chunkSent = 0;
 
         while (1) {
-            bytes = SSL_read(ssl, buffer, 1024); /* get request */
+            bytes = SSL_read(ssl, buffer, CHUNK_SIZE); /* get request */
 
             if (bytes == 0) break;
 
@@ -119,7 +157,7 @@ void servlet(SSL *ssl, ServerConfiguration server) {
                     break;
 
                 case CREATE_FILE:
-                    client.file = createFile(client.username, client.password, content, server.rootDir);
+                    client.filePath = createFile(client.username, client.password, content, server.rootDir);
                     printf("File opened\n");
                     break;
 
@@ -130,18 +168,22 @@ void servlet(SSL *ssl, ServerConfiguration server) {
 
                 case FILE_CONTENT:
                     if (verifyUser(client.username, client.password)) {
-                        if (client.file != NULL) {
+                        if (client.filePath != NULL) {
                             // Append to file
-                            fputs(content, client.file);
-                            printf("Data written\n");
+                            writeChunk(client.filePath, content, client.chunkSent);
 
                             if (++client.chunkSent >= client.fileSize / CHUNK_SIZE) {
                                 printf("File sending is done\n");
-                                fclose(client.file);
+                                client.filePath = NULL;
                             }
-                        }
 
-                        printf("User %s sent file data\n", client.username);
+                            sprintf(writeBuffer, "%c", CHUNK_RECEIVED);
+                            SSL_write(ssl, writeBuffer, CHUNK_SIZE);
+
+                            printf("User %s sent file data\n", client.username);
+                        } else {
+                            printf("No file is currently open\n");
+                        }
                     } else {
                         printf("User is not logged in!\n");
                     }
@@ -153,7 +195,7 @@ void servlet(SSL *ssl, ServerConfiguration server) {
                                    "Content-Length: 33\n"
                                    "Content-Type: text/html;\n"
                                    "\n"
-                                   "405 This is not a http(s) server!", 1024);
+                                   "405 This is not a http(s) server!", CHUNK_SIZE);
                     break;
             }
         }
