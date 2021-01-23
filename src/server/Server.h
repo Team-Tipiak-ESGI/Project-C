@@ -1,3 +1,5 @@
-void servlet(SSL *ssl, ServerConfiguration server);
+#include "Database.h"
 
-unsigned char verifyUser(char* username, char* password);
+void servlet(SSL *ssl, ServerConfiguration server, MongoConnection* mongoConnection);
+
+unsigned char verifyUser(char* username, char* password, MongoConnection* mongoConnection);

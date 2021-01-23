@@ -17,6 +17,8 @@
 #include "../shared/ChunkSize.h"
 #include "ServerConfiguration.h"
 #include "Client.h"
+#include "MongoConnection.h"
+#include "Database.h"
 
 /**
  * Verify if the given credentials are valid
@@ -24,7 +26,7 @@
  * @param password
  * @return 1 if valid, 0 if not
  */
-unsigned char verifyUser(char* username, char* password) {
+unsigned char verifyUser(char* username, char* password, MongoConnection* mongoConnection) {
     if (username == NULL && password == NULL) {
         return 0;
     }
@@ -36,7 +38,7 @@ unsigned char verifyUser(char* username, char* password) {
     return (strcmp(username, validUsername) == 0 && strcmp(password, validPassword) == 0);
 }
 
-// TODO: Save file's chunks in a folder
+// Save file's chunks in a folder
 //   (folder) a7e9fb
 //     - (file) 1 (← this is the chunk number)
 //     - (file) 2
@@ -122,7 +124,7 @@ void writeChunk(const char* originalFilePath, const char* content, const int chu
  * Serve the connection
  * @param ssl
  */
-void servlet(SSL *ssl, ServerConfiguration server) {
+void servlet(SSL *ssl, ServerConfiguration server, MongoConnection* mongoConnection) {
     char buffer[CHUNK_SIZE];
     char writeBuffer[CHUNK_SIZE];
     int sd, bytes;
@@ -144,6 +146,7 @@ void servlet(SSL *ssl, ServerConfiguration server) {
             printf("Message from socket (%d) (packet type: %d) : %s\n", bytes, firstByte, content);
 
             switch (firstByte) {
+                // TODO: Add option to create new user
                 case USERNAME:
                     // Copy username to variable
                     client.username = malloc(sizeof(char) * strlen(content));
@@ -167,7 +170,7 @@ void servlet(SSL *ssl, ServerConfiguration server) {
                     break;
 
                 case FILE_CONTENT:
-                    if (verifyUser(client.username, client.password)) {
+                    if (verifyUser(client.username, client.password, mongoConnection)) {
                         if (client.filePath != NULL) {
                             // Append to file
                             writeChunk(client.filePath, content, client.chunkSent);

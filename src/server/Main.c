@@ -22,7 +22,9 @@
 #include "../shared/PacketTypes.h"
 #include "ServerConfiguration.h"
 #include "Connection.h"
+#include "MongoConnection.h"
 #include "Server.h"
+#include "Database.h"
 
 int main(void) {
     ServerConfiguration serverConfiguration;
@@ -54,6 +56,11 @@ int main(void) {
 
     printf("Server listening...\n");
 
+    // Open database
+    MongoConnection* mongoConnection = MongoConnection__init();
+
+    // TODO: Create default table if not exists
+
     // Main loop
     while (1) {
         struct sockaddr_in addr;
@@ -70,7 +77,7 @@ int main(void) {
 
         if (pid == 0) {
             // If in fork
-            servlet(ssl, serverConfiguration);         /* service connection */
+            servlet(ssl, serverConfiguration, mongoConnection);         /* service connection */
         }
     }
 

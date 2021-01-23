@@ -3,7 +3,7 @@
 # Compilation
 - Installer les dépendances avec la commande suivante :
 ```sh
-sudo apt install libncurses5-dev libncursesw5-dev libmongoc-dev libbson-dev libssl-dev gcc cmake openssl
+sudo apt install libncurses5-dev libncursesw5-dev libmongoc-dev libbson-dev libmongoc-1.0-0 libbson-1.0-0 libssl-dev libsasl2-dev gcc cmake openssl
 ```
 - Compiler avec :
 ```sh
