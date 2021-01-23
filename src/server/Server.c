@@ -17,8 +17,8 @@
 #include "../shared/ChunkSize.h"
 #include "ServerConfiguration.h"
 #include "Client.h"
+
 #include "MongoConnection.h"
-#include "Database.h"
 
 /**
  * Verify if the given credentials are valid

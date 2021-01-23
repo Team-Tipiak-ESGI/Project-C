@@ -22,8 +22,8 @@
 #include "../shared/PacketTypes.h"
 #include "ServerConfiguration.h"
 #include "Connection.h"
-#include "MongoConnection.h"
 #include "Server.h"
+
 #include "Database.h"
 
 int main(void) {
@@ -54,12 +54,12 @@ int main(void) {
     // TODO: Put port in config file
     server = openListener(PORT);    /* create server socket */
 
-    printf("Server listening...\n");
-
     // Open database
     MongoConnection* mongoConnection = MongoConnection__init();
 
     // TODO: Create default table if not exists
+
+    printf("Server listening...\n");
 
     // Main loop
     while (1) {

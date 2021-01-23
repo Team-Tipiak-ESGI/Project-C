@@ -1,4 +1,4 @@
-#include "Database.h"
+#include "MongoConnection.h"
 
 void servlet(SSL *ssl, ServerConfiguration server, MongoConnection* mongoConnection);
 
