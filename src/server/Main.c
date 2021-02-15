@@ -56,6 +56,8 @@ int main(void) {
 
     // Open database
     MongoConnection* mongoConnection = MongoConnection__init();
+    MongoConnection__createUser(mongoConnection, "quozul", "test2");
+    MongoConnection__getUser(mongoConnection, "quozul", "test2");
 
     // TODO: Create default table if not exists
 

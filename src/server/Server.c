@@ -47,6 +47,8 @@ unsigned char verifyUser(char* username, char* password, MongoConnection* mongoC
 //   - owner
 //   - chunk count
 //   - chunk size
+// TODO: Fix large chunks not being received correctly
+// TODO: Threaded send and receive functions
 
 /**
  * Create a folder to store all file's chunks
