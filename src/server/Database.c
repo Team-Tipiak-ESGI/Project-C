@@ -31,27 +31,25 @@ void MongoConnection__createUser(MongoConnection* mongoConnection, char* usernam
     bson_destroy(document);
 }
 
-void MongoConnection__getUser(MongoConnection* mongoConnection, char* username, char* password) {
+int MongoConnection__getUser(MongoConnection* mongoConnection, char* username, char* password) {
     // Build query
     bson_t * query = bson_new();
 
     BSON_APPEND_UTF8(query, "username", username);
     BSON_APPEND_UTF8(query, "password", password);
 
-    // Make query
-    mongoc_cursor_t * cursor = mongoc_collection_find_with_opts (mongoConnection->collection, query, NULL, NULL);
+    bson_error_t error;
+    int count = mongoc_collection_count(mongoConnection->collection, MONGOC_QUERY_NONE, query, 0, 0, NULL, &error);
 
-    // Output
-    const bson_t *doc;
-
-    while (mongoc_cursor_next (cursor, &doc)) {
-        char * str = bson_as_canonical_extended_json(doc, NULL);
-        printf("%s\n", str);
-        bson_free(str);
+    if (count < 0) {
+        fprintf (stderr, "%s\n", error.message);
+    } else {
+        printf ("%d\n", count);
     }
 
     bson_destroy(query);
-    mongoc_cursor_destroy(cursor);
+
+    return count;
 }
 
 /**

@@ -13,12 +13,15 @@
 #include <openssl/sha.h>
 #include <openssl/md5.h>
 
+#include <mongoc/mongoc.h>
+
 #include "../shared/PacketTypes.h"
 #include "../shared/ChunkSize.h"
 #include "ServerConfiguration.h"
 #include "Client.h"
 
 #include "MongoConnection.h"
+#include "Database.h"
 
 /**
  * Verify if the given credentials are valid
@@ -31,11 +34,10 @@ unsigned char verifyUser(char* username, char* password, MongoConnection* mongoC
         return 0;
     }
 
-    // TODO: Verify using values in database
-    const char* validUsername = "quozul\0";
-    const char* validPassword = "password\0";
+    int users = MongoConnection__getUser(mongoConnection, username, password);
+    printf("Verifying user [%s] [%s] %d...\n", username, password, users);
 
-    return (strcmp(username, validUsername) == 0 && strcmp(password, validPassword) == 0);
+    return users > 0;
 }
 
 // Save file's chunks in a folder
@@ -152,13 +154,13 @@ void servlet(SSL *ssl, ServerConfiguration server, MongoConnection* mongoConnect
                 case USERNAME:
                     // Copy username to variable
                     client.username = malloc(sizeof(char) * strlen(content));
-                    strncpy(client.username, content, strlen(content));
+                    strncpy(client.username, content, strlen(content) + 1);
                     break;
 
                 case PASSWORD:
                     // Copy password to variable
                     client.password = malloc(sizeof(char) * strlen(content));
-                    strncpy(client.password, content, strlen(content));
+                    strncpy(client.password, content, strlen(content) + 1);
                     break;
 
                 case CREATE_FILE:
@@ -190,6 +192,8 @@ void servlet(SSL *ssl, ServerConfiguration server, MongoConnection* mongoConnect
                             printf("No file is currently open\n");
                         }
                     } else {
+                        sprintf(writeBuffer, "%c", UNAUTHORIZED);
+                        SSL_write(ssl, writeBuffer, CHUNK_SIZE);
                         printf("User is not logged in!\n");
                     }
                     break;

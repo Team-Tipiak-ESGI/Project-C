@@ -19,4 +19,5 @@ enum packet_type {
     FILE_CLOSED = 0x40,
 
     CHUNK_RECEIVED = 0x50,
+    UNAUTHORIZED = 0x60,
 };

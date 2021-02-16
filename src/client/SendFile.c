@@ -67,9 +67,17 @@ void sendFileToSocket(SSL *ssl, const char* filename) {
 
         do {
             SSL_read(ssl, readBuffer, CHUNK_SIZE);
-        } while(readBuffer[0] != CHUNK_RECEIVED);
+        } while(readBuffer[0] != CHUNK_RECEIVED && readBuffer[0] != UNAUTHORIZED);
 
-        printf("Chunk received by server!\n");
+        switch (readBuffer[0]) {
+            case UNAUTHORIZED:
+                printf("Not authorized!\n");
+                break;
+
+            case CHUNK_RECEIVED:
+                printf("Chunk received by server!\n");
+                break;
+        }
 
         free(fileData);
     }
@@ -87,6 +95,8 @@ void sendFileToSocket(SSL *ssl, const char* filename) {
  * @param password
  */
 void login(SSL *ssl, const char* username, const char* password) {
+    printf("Logging in with credentials [%s] [%s]...\n", username, password);
+
     char* buffer = malloc(sizeof(char) * CHUNK_SIZE);
 
     // Send username
