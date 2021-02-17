@@ -20,4 +20,5 @@ enum packet_type {
 
     CHUNK_RECEIVED = 0x50,
     UNAUTHORIZED = 0x60,
+    LIST_FILES = 0x70,
 };

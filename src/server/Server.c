@@ -3,6 +3,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <pthread.h>
+#include <dirent.h>
 
 #include <unistd.h> /* close */
 #include <netdb.h> /* gethostbyname */
@@ -53,20 +54,40 @@ unsigned char verifyUser(char* username, char* password, MongoConnection* mongoC
 // TODO: Threaded send and receive functions
 
 /**
- * Create a folder to store all file's chunks
- * @param username Username of the owner
- * @param password Password of the owner (should be hashed)
- * @param fileName Send file name by the client
- * @param rootDir Directory to store files from server's configuration
- * @return Path of the folder which should contain all the chunks of the file
+ * Hash the input to an hexadecimal string
+ * @param input
+ * @return
  */
-char* createFile(const char* username, const char* password, const char* fileName, const char* rootDir) {
-    char hashedName[40] = {0};
-    char * filePath;
-    char * temp = malloc(1024);
-
-    char * hashInput = malloc(1024);
+char* hexHash(char * input) {
     unsigned char hashedOutput[20];
+    char * hashedName = malloc(40);
+
+    // Initialize string to 0
+    for (int i = 0; i < 40; ++i) {
+        hashedName[i] = 0;
+    }
+
+    SHA1((const unsigned char*)input, strlen(input), hashedOutput);
+
+    // Convert SHA to hex string
+    char hex[3];
+    for (int i = 0; i < 20; i++) {
+        sprintf(hex, "%02x", hashedOutput[i]);
+        strcat(hashedName, hex);
+    }
+
+    return hashedName;
+}
+
+/**
+ * Return the directory name of the given user
+ * @param username
+ * @param password
+ * @return
+ */
+char * getUserDir(const char* username, const char* password) {
+    char * temp = malloc(1024);
+    char * hashInput = malloc(1024);
 
     // Generate hashed name for the file, should be unique
     strcpy(temp, username);
@@ -79,25 +100,39 @@ char* createFile(const char* username, const char* password, const char* fileNam
 
     free(temp);
 
-    strcat(hashInput, fileName);
+    return hexHash(hashInput);
+}
 
-    SHA1((const unsigned char*)hashInput, strlen(hashInput), hashedOutput);
-
-    // Convert SHA to hex string
-    char hex[3];
-    for (int i = 0; i < 20; i++) {
-        sprintf(hex, "%02x", hashedOutput[i]);
-        strcat(hashedName, hex);
-    }
-
-    // Generate file path
-    filePath = malloc(strlen(rootDir) + strlen(hashedName) + 1);
-    strcpy(filePath, rootDir);
-    strcat(filePath, hashedName);
-
-    // Create directory if not exists
+/**
+ * Create a folder to store all file's chunks
+ * @param username Username of the owner
+ * @param password Password of the owner (should be hashed)
+ * @param fileName Send file name by the client
+ * @param rootDir Directory to store files from server's configuration
+ * @return Path of the folder which should contain all the chunks of the file
+ */
+char* createFile(const char* username, const char* password, const char* fileName, const char* rootDir) {
+    char * filePath;
     struct stat st = {0};
 
+    char * hashedNameUser = getUserDir(username, password);
+    char * hashedFileName = hexHash((char*) fileName);
+
+    // Generate file path
+    filePath = malloc(strlen(rootDir) + strlen(hashedNameUser) + strlen(hashedFileName) + 1);
+    strcpy(filePath, rootDir);
+    strcat(filePath, hashedNameUser);
+
+    // Create directory if not exists
+    if (stat(filePath, &st) == -1) {
+        mkdir(filePath, 0700);
+    }
+
+    // Add hashed filename to file path
+    strcat(filePath, "/");
+    strcat(filePath, hashedFileName);
+
+    // Create directory if not exists
     if (stat(filePath, &st) == -1) {
         mkdir(filePath, 0700);
     }
@@ -105,6 +140,12 @@ char* createFile(const char* username, const char* password, const char* fileNam
     return filePath;
 }
 
+/**
+ * Write a file chunk to disk
+ * @param originalFilePath
+ * @param content
+ * @param chunkNumber
+ */
 void writeChunk(const char* originalFilePath, const char* content, const int chunkNumber) {
     char chunkId[12];
     char filePath[1024];
@@ -176,6 +217,8 @@ void servlet(SSL *ssl, ServerConfiguration server, MongoConnection* mongoConnect
                 case FILE_CONTENT:
                     if (verifyUser(client.username, client.password, mongoConnection)) {
                         if (client.filePath != NULL) {
+                            // TODO: Save real file name and hashed file name in database
+
                             // Append to file
                             writeChunk(client.filePath, content, client.chunkSent);
 
@@ -195,6 +238,39 @@ void servlet(SSL *ssl, ServerConfiguration server, MongoConnection* mongoConnect
                         sprintf(writeBuffer, "%c", UNAUTHORIZED);
                         SSL_write(ssl, writeBuffer, CHUNK_SIZE);
                         printf("User is not logged in!\n");
+                    }
+                    break;
+
+                case LIST_FILES:
+                    if (verifyUser(client.username, client.password, mongoConnection)) {
+                        printf("User %s requested file listing\n", client.username);
+
+                        sprintf(writeBuffer, "%c", LIST_FILES);
+
+                        // List files in directory
+                        DIR *d;
+                        struct dirent *dir;
+
+                        // Generate file path
+                        char * hashedNameUser = getUserDir(client.username, client.password);
+                        char * filePath = malloc(strlen(server.rootDir) + strlen(hashedNameUser) + 1);
+                        strcpy(filePath, server.rootDir);
+                        strcat(filePath, hashedNameUser);
+
+                        d = opendir(filePath);
+                        if (d) {
+                            while ((dir = readdir(d)) != NULL) {
+                                if (dir->d_name[0] == '.') continue;
+
+                                // TODO: Get real file name
+                                sprintf(writeBuffer, "%s%s%c", writeBuffer, dir->d_name, 1);
+
+                                printf("%s\n", dir->d_name);
+                            }
+                            closedir(d);
+                        }
+
+                        SSL_write(ssl, writeBuffer, CHUNK_SIZE);
                     }
                     break;
 

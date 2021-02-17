@@ -89,6 +89,32 @@ void sendFileToSocket(SSL *ssl, const char* filename) {
 }
 
 /**
+ * Ask server for file list and print the list
+ * @param ssl
+ */
+void listFiles(SSL *ssl) {
+    char readBuffer[CHUNK_SIZE];
+    char* msg = malloc(sizeof(char) * CHUNK_SIZE);
+
+    sprintf(msg, "%c", LIST_FILES);
+    SSL_write(ssl, msg, CHUNK_SIZE);   /* encrypt & send message */
+
+    printf("Chunk sent, waiting server response\n");
+
+    SSL_read(ssl, readBuffer, CHUNK_SIZE);
+
+    char* content = readBuffer + 1;
+    char *tok = content;
+
+    // Print the file list
+    printf("Files:\n", tok);
+    while ((tok = strtok(tok, "\1")) != NULL) {
+        printf("  [%s]\n", tok);
+        tok = NULL;
+    }
+}
+
+/**
  * Function to send credentials to server
  * @param ssl
  * @param username

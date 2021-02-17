@@ -49,6 +49,8 @@ int main(int argc, char** argv) {
 
         sendFileToSocket(ssl, argv[3]);
 
+        listFiles(ssl);
+
         SSL_free(ssl);        /* release connection state */
     }
 
