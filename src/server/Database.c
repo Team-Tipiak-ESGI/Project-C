@@ -1,4 +1,5 @@
 #include <mongoc/mongoc.h>
+#include <openssl/sha.h>
 #include "MongoConnection.h"
 
 MongoConnection* MongoConnection__init(char * uri_string) {
@@ -10,7 +11,33 @@ MongoConnection* MongoConnection__init(char * uri_string) {
     return mongoConnection;
 }
 
-void MongoConnection__createUser(MongoConnection* mongoConnection, char* username, char* password) {
+int MongoConnection__getUser(MongoConnection* mongoConnection, char* username, char* password) {
+    // Build query
+    bson_t * query = bson_new();
+
+    BSON_APPEND_UTF8(query, "username", username);
+
+    if (password != NULL) {
+        BSON_APPEND_UTF8(query, "password", password);
+    }
+
+    bson_error_t error;
+    int count = mongoc_collection_count(mongoConnection->collection, MONGOC_QUERY_NONE, query, 0, 0, NULL, &error);
+
+    if (count < 0) {
+        fprintf(stderr, "%s\n", error.message);
+    }
+
+    bson_destroy(query);
+
+    return count;
+}
+
+int MongoConnection__createUser(MongoConnection* mongoConnection, char* username, char* password) {
+    if (MongoConnection__getUser(mongoConnection, username, NULL) != 0) {
+        return 0;
+    }
+
     bson_t * document = bson_new();
     bson_error_t error;
 
@@ -26,27 +53,8 @@ void MongoConnection__createUser(MongoConnection* mongoConnection, char* usernam
     }
 
     bson_destroy(document);
-}
 
-int MongoConnection__getUser(MongoConnection* mongoConnection, char* username, char* password) {
-    // Build query
-    bson_t * query = bson_new();
-
-    BSON_APPEND_UTF8(query, "username", username);
-    BSON_APPEND_UTF8(query, "password", password);
-
-    bson_error_t error;
-    int count = mongoc_collection_count(mongoConnection->collection, MONGOC_QUERY_NONE, query, 0, 0, NULL, &error);
-
-    if (count < 0) {
-        fprintf (stderr, "%s\n", error.message);
-    } else {
-        printf ("%d\n", count);
-    }
-
-    bson_destroy(query);
-
-    return count;
+    return 1;
 }
 
 /**

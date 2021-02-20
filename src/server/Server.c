@@ -200,8 +200,26 @@ void servlet(SSL *ssl, ServerConfiguration server, MongoConnection* mongoConnect
 
                 case PASSWORD:
                     // Copy password to variable
-                    client.password = malloc(sizeof(char) * strlen(content));
-                    strncpy(client.password, content, strlen(content) + 1);
+                    client.password = malloc(64);
+                    unsigned char * hashedPassword = malloc(32);
+
+                    // Set password to all 0
+                    for (int i = 0; i < 64; i++) client.password[i] = 0;
+                    for (int i = 0; i < 32; i++) hashedPassword[i] = 0;
+
+                    // Generate hash
+                    SHA256((const unsigned char*)content, strlen(content), hashedPassword);
+
+                    // Convert hash to hex
+                    char hex[3];
+                    for (int i = 0; i < 32; i++) {
+                        sprintf(hex, "%02x", hashedPassword[i]);
+                        strcat(client.password, hex);
+                    }
+
+                    free(hashedPassword);
+
+                    printf("Received password: [%s] [%s]\n", content, client.password);
                     break;
 
                 case CREATE_FILE:
