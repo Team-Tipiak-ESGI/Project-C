@@ -34,6 +34,7 @@ int MongoConnection__getUser(MongoConnection* mongoConnection, char* username, c
 }
 
 int MongoConnection__createUser(MongoConnection* mongoConnection, char* username, char* password) {
+    // If a user with the given username already exists, abort
     if (MongoConnection__getUser(mongoConnection, username, NULL) != 0) {
         return 0;
     }

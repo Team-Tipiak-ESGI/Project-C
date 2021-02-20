@@ -45,6 +45,8 @@ int main(int argc, char** argv) {
     } else {
         printf("Connected with %s encryption\n", SSL_get_cipher(ssl));
 
+        //signup(ssl, "bonjour", "test");
+
         login(ssl, argv[1], argv[2]);
 
         sendFileToSocket(ssl, argv[3]);

@@ -191,7 +191,7 @@ void servlet(SSL *ssl, ServerConfiguration server, MongoConnection* mongoConnect
             printf("Message from socket (%d) (packet type: %d) : %s\n", bytes, firstByte, content);
 
             switch (firstByte) {
-                // TODO: Add option to create new user
+                // TODO: Add option to delete and read a file
                 case USERNAME:
                     // Copy username to variable
                     client.username = malloc(sizeof(char) * strlen(content));
@@ -199,7 +199,7 @@ void servlet(SSL *ssl, ServerConfiguration server, MongoConnection* mongoConnect
                     break;
 
                 case PASSWORD:
-                    // Copy password to variable
+                    // Hash password
                     client.password = malloc(64);
                     unsigned char * hashedPassword = malloc(32);
 
@@ -214,12 +214,24 @@ void servlet(SSL *ssl, ServerConfiguration server, MongoConnection* mongoConnect
                     char hex[3];
                     for (int i = 0; i < 32; i++) {
                         sprintf(hex, "%02x", hashedPassword[i]);
-                        strcat(client.password, hex);
+                        strcat(client.password, hex); // Copy hex to client's password
                     }
 
                     free(hashedPassword);
+                    break;
 
-                    printf("Received password: [%s] [%s]\n", content, client.password);
+                case CREATE_USER:
+                    if (client.username != NULL && client.password != NULL) {
+                        int res = MongoConnection__createUser(mongoConnection, client.username, client.password);
+
+                        if (res == 1) {
+                            sprintf(writeBuffer, "%c", USER_CREATED);
+                        } else {
+                            sprintf(writeBuffer, "%c", USER_EXISTS);
+                        }
+
+                        SSL_write(ssl, writeBuffer, CHUNK_SIZE);
+                    }
                     break;
 
                 case CREATE_FILE:

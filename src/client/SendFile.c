@@ -132,3 +132,43 @@ void login(SSL *ssl, const char* username, const char* password) {
     sprintf(buffer, "%c%s", PASSWORD, password);
     SSL_write(ssl, buffer, CHUNK_SIZE);
 }
+
+/**
+ * Create an account with the given credentials
+ * @param ssl
+ * @param username
+ * @param password
+ */
+int signup(SSL *ssl, const char* username, const char* password) {
+    printf("Signing up with credentials [%s] [%s]...\n", username, password);
+
+    char* buffer = malloc(sizeof(char) * CHUNK_SIZE);
+
+    // Send username
+    sprintf(buffer, "%c%s", USERNAME, username);
+    SSL_write(ssl, buffer, CHUNK_SIZE);
+
+    // Send password
+    sprintf(buffer, "%c%s", PASSWORD, password);
+    SSL_write(ssl, buffer, CHUNK_SIZE);
+
+    // Ask account creation
+    sprintf(buffer, "%c", CREATE_USER);
+    SSL_write(ssl, buffer, CHUNK_SIZE);
+
+    // Wait for server's response
+    char readBuffer[CHUNK_SIZE];
+    SSL_read(ssl, readBuffer, CHUNK_SIZE);
+
+    switch (readBuffer[0]) {
+        case USER_CREATED:
+            printf("User successfully created!\n");
+            return 1;
+
+        case USER_EXISTS:
+            printf("A user with the same username already exists!\n");
+            return 0;
+    }
+
+    return -1;
+}
