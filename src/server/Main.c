@@ -71,19 +71,32 @@ int main(void) {
     while (1) {
         struct sockaddr_in addr;
         socklen_t len = sizeof(addr);
-        SSL *ssl;
 
-        int client = accept(server, (struct sockaddr *) &addr, &len);  /* accept connection as usual */
+        int client = accept(server, (struct sockaddr *) &addr, &len);  // Accept connection as usual
         // TODO: Log connections to a file
         printf("Connection from: %s:%d\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
-        ssl = SSL_new(ctx);              /* get new SSL state with context */
-        SSL_set_fd(ssl, client);      /* set connection socket to SSL state */
 
         int pid = fork();
 
         if (pid == 0) {
             // If in fork
-            servlet(ssl, serverConfiguration, mongoConnection);         /* service connection */
+            printf("Forking\n");
+
+            SSL * ssl = SSL_new(ctx); // Get new SSL state with context
+            SSL_set_fd(ssl, client); // set connection socket to SSL state
+
+            servlet(ssl, serverConfiguration, mongoConnection); // Service connection
+
+            int sd = SSL_get_fd(ssl);       /* get socket connection */
+            SSL_free(ssl);         /* release SSL state */
+            close(sd);          /* close connection */
+            close(client);          /* close connection */
+
+            printf("Connection closed.\n");
+        } else if (pid < 0) {
+            // Fork error
+            printf("PID: %d\n", pid);
+            break;
         }
     }
 

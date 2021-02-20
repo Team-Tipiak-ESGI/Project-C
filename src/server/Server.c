@@ -24,6 +24,8 @@
 #include "MongoConnection.h"
 #include "Database.h"
 
+// TODO: Move theses functions to an other file
+
 /**
  * Verify if the given credentials are valid
  * @param username
@@ -172,12 +174,19 @@ void writeChunk(const char* originalFilePath, const char* content, const int chu
 void servlet(SSL *ssl, ServerConfiguration server, MongoConnection* mongoConnection) {
     char buffer[CHUNK_SIZE];
     char writeBuffer[CHUNK_SIZE];
-    int sd, bytes;
+    int bytes;
 
-    if (SSL_accept(ssl) < 0) {     /* do SSL-protocol accept */
+    printf("Serve %p\n", ssl);
+
+    int accept = SSL_accept(ssl);
+
+    printf("Accept %d\n", accept);
+
+    if (accept < 0) {     /* do SSL-protocol accept */
         ERR_print_errors_fp(stderr);
     } else {
         Client client;
+
         client.chunkSent = 0;
 
         while (1) {
@@ -190,6 +199,7 @@ void servlet(SSL *ssl, ServerConfiguration server, MongoConnection* mongoConnect
 
             printf("Message from socket (%d) (packet type: %d) : %s\n", bytes, firstByte, content);
 
+            // TODO: Put everything of this switch in functions
             switch (firstByte) {
                 // TODO: Add option to delete and read a file
                 case USERNAME:
@@ -272,11 +282,87 @@ void servlet(SSL *ssl, ServerConfiguration server, MongoConnection* mongoConnect
                     }
                     break;
 
+                case READ_FILE:
+                    printf("User %s requested to read file %s\n", client.username, content);
+
+
+                    char * userDir = getUserDir(client.username, client.password);
+                    char * path = malloc(sizeof server.rootDir + sizeof userDir + sizeof content + 2);
+
+                    strcpy(path, server.rootDir);
+                    strcat(path, userDir);
+                    strcat(path, "/");
+                    strcat(path, content); // TODO: Adapt using the original name
+
+                    printf("File directory: %s\n", path);
+
+                    DIR *d;
+                    struct dirent *dir, *dir2;
+                    int fileCount = 0;
+
+                    d = opendir(path);
+                    if (d) {
+                        while ((dir = readdir(d)) != NULL)
+                            if (dir->d_type == DT_REG) /* If the entry is a regular file */
+                                fileCount++;
+
+                        printf("Chunk count: %d\n", fileCount);
+
+                        // Send file size in chunk count
+                        sprintf(writeBuffer, "%c%c", FILE_SIZE, fileCount);
+                        SSL_write(ssl, writeBuffer, CHUNK_SIZE);
+
+                        rewinddir(d);
+
+                        // TO FIX: STUCK HERE
+                        while ((dir2 = readdir(d)) != NULL) {
+                            printf("%s", dir2->d_name);
+                            /*if (dir->d_name[0] == '.') continue;
+
+                            char * filePath = malloc(sizeof(userDir) + sizeof(dir->d_name));
+                            strcpy(filePath, userDir);
+                            strcat(filePath, dir->d_name);
+                            printf("File path: %s\n", filePath);
+
+                            // Load file content into memory
+                            FILE * file = fopen(filePath, "rb");
+                            char* fileBuffer;
+                            long fileLength;
+
+                            // jump to end of file
+                            fseek(file, 0, SEEK_END);
+                            // get offset (used for length)
+                            fileLength = ftell(file);
+                            // go back to start of file
+                            rewind(file);
+
+                            // allocate memory for the fileBuffer
+                            fileBuffer = (char*)malloc(fileLength * sizeof(char));
+                            // write file data to fileBuffer
+                            fread(fileBuffer, 1, fileLength, file);
+                            // close file
+                            fclose(file);
+
+                            printf("File content: %s\n", fileBuffer);*/
+                        }
+
+                        closedir(d);
+                    }
+
+
+                    sprintf(writeBuffer, "%c%s", FILE_CONTENT, "test");
+                    SSL_write(ssl, writeBuffer, CHUNK_SIZE);
+                    break;
+
+                case DELETE_FILE:
+                    printf("User %s requested to delete file %s\n", client.username, content);
+                    break;
+
                 case LIST_FILES:
                     if (verifyUser(client.username, client.password, mongoConnection)) {
                         printf("User %s requested file listing\n", client.username);
 
-                        MongoConnection__listFile(mongoConnection, client.username, client.password);
+                        //MongoConnection__listFile(mongoConnection, client.username, client.password);
 
                         sprintf(writeBuffer, "%c", LIST_FILES);
 
@@ -301,6 +387,8 @@ void servlet(SSL *ssl, ServerConfiguration server, MongoConnection* mongoConnect
                             closedir(d);
                         }
 
+                        free(filePath);
+
                         printf("Listing done!\n");
                         SSL_write(ssl, writeBuffer, CHUNK_SIZE);
                     }
@@ -316,11 +404,8 @@ void servlet(SSL *ssl, ServerConfiguration server, MongoConnection* mongoConnect
                     break;
             }
         }
+
+        free(client.password);
+        free(client.username);
     }
-
-    sd = SSL_get_fd(ssl);       /* get socket connection */
-    SSL_free(ssl);         /* release SSL state */
-    close(sd);          /* close connection */
-
-    printf("Connection closed.\n");
 }

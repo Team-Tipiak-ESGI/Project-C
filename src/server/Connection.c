@@ -9,7 +9,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-// Code from https://stackoverflow.com/q/11705815
+// Code inspired from https://stackoverflow.com/q/11705815
 
 int openListener(int port) {
     int sd;

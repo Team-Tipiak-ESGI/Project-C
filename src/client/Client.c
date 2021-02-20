@@ -51,7 +51,10 @@ int main(int argc, char** argv) {
 
         sendFileToSocket(ssl, argv[3]);
 
-        listFiles(ssl);
+        char ** files = listFiles(ssl);
+        printf("File: %s\n", files[0]);
+
+        readFile(ssl, files[0], "/home/erwan/downloaded");
 
         SSL_free(ssl);        /* release connection state */
     }

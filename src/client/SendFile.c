@@ -91,7 +91,7 @@ void sendFileToSocket(SSL *ssl, const char* filename) {
  * Ask server for file list and print the list
  * @param ssl
  */
-void listFiles(SSL *ssl) {
+char ** listFiles(SSL *ssl) {
     char readBuffer[CHUNK_SIZE];
     char* msg = malloc(sizeof(char) * CHUNK_SIZE);
 
@@ -102,15 +102,61 @@ void listFiles(SSL *ssl) {
 
     SSL_read(ssl, readBuffer, CHUNK_SIZE);
 
-    char* content = readBuffer + 1;
-    char *tok = content;
+    char * content = readBuffer + 1;
+
+    // Count files
+    int i, count;
+    for (i = 0, count = 0; content[i]; i++) count += (content[i] == 1);
+
+    char ** files = malloc(sizeof(char *) * count);
+
+    char * tok = content;
+
+    i = 0;
 
     // Print the file list
     printf("Files:\n");
     while ((tok = strtok(tok, "\1")) != NULL) {
         printf("  [%s]\n", tok);
+        files[i++] = strdup(tok); // Add file to file list
         tok = NULL;
     }
+
+    return files;
+}
+
+void readFile(SSL *ssl, char * fileName, char * destination) {
+    char readBuffer[CHUNK_SIZE];
+    char* msg = malloc(sizeof(char) * CHUNK_SIZE);
+
+    int fileSize = -1, receivedChunks = 0;
+    FILE * file = fopen(destination, "ab+");
+
+    sprintf(msg, "%c%s", READ_FILE, fileName);
+    SSL_write(ssl, msg, CHUNK_SIZE);
+
+    printf("Request sent, waiting server response\n");
+
+    while (fileSize == -1 || receivedChunks < (double)fileSize / CHUNK_SIZE) {
+        SSL_read(ssl, readBuffer, CHUNK_SIZE);
+
+        char * content = readBuffer + 1;
+
+        switch (readBuffer[0]) {
+            case FILE_SIZE:
+                fileSize = (unsigned char) *content;
+                printf("File size: %d\n", fileSize);
+                break;
+            case FILE_CONTENT:
+                fputs(content, file);
+                receivedChunks++;
+                printf("Content: %s\n", content);
+                break;
+        }
+    }
+
+    fclose(file);
+    free(msg);
 }
 
 /**
