@@ -67,11 +67,56 @@ void MongoConnection__addFile(MongoConnection* mongoConnection, char* username, 
     BSON_APPEND_UTF8(query, "password", password);
 
     // Build update
-    bson_t *update = BCON_NEW("$push", "{", "files", "{", BCON_UTF8(fileName), BCON_UTF8(filePath), "}", "}");
+    bson_t *update = BCON_NEW("$push", "{", "files", "{", "filename", BCON_UTF8(fileName), "filepath", BCON_UTF8(filePath), "}", "}");
 
     if (!mongoc_collection_update_one(mongoConnection->collection, query, update, NULL, NULL, &error)) {
         fprintf(stderr, "%s\n", error.message);
     }
+}
+
+void MongoConnection__listFile(MongoConnection* mongoConnection, char* username, char* password) {
+    bson_error_t error;
+    const bson_t *doc;
+
+    // Build query
+    bson_t * query = bson_new();
+    BSON_APPEND_UTF8(query, "username", username);
+    BSON_APPEND_UTF8(query, "password", password);
+
+    // Query
+    mongoc_cursor_t *cursor = mongoc_collection_find_with_opts(mongoConnection->collection, query, NULL, NULL);
+
+    while (mongoc_cursor_next(cursor, &doc)) {
+        bson_iter_t iter;
+        bson_type_t type;
+
+        bson_iter_init(&iter, doc);
+
+        bson_iter_find(&iter, "files");
+
+        const uint8_t * data = NULL;
+        uint32_t len = 0;
+        bson_iter_array(&iter, &len, &data);
+
+        bson_t * fSubArray = bson_new_from_data(data, len);
+        bson_iter_t fIter;
+        bson_iter_init(&fIter, fSubArray);
+
+        while ((type = bson_iter_next(&fIter))) {
+            printf("Type: %d Key: [%s]\n", type, bson_iter_key(&fIter));
+
+            /*bson_iter_t sub;
+            bool a = bson_iter_find_descendant(&fIter, "filename", &sub);
+            printf("a: %d Address: %p\n", a, &sub);*/
+
+            uint32_t length = 0;
+            const char * value = bson_iter_utf8(&fIter, NULL);
+            printf("Value: [%s] Length: %d\n", value, length);
+        }
+    }
+
+    bson_destroy(query);
+    mongoc_cursor_destroy(cursor);
 }
 
 /**

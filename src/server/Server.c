@@ -276,6 +276,8 @@ void servlet(SSL *ssl, ServerConfiguration server, MongoConnection* mongoConnect
                     if (verifyUser(client.username, client.password, mongoConnection)) {
                         printf("User %s requested file listing\n", client.username);
 
+                        MongoConnection__listFile(mongoConnection, client.username, client.password);
+
                         sprintf(writeBuffer, "%c", LIST_FILES);
 
                         // List files in directory
@@ -295,12 +297,11 @@ void servlet(SSL *ssl, ServerConfiguration server, MongoConnection* mongoConnect
 
                                 // TODO: Get real file name
                                 sprintf(writeBuffer, "%s%s%c", writeBuffer, dir->d_name, 1);
-
-                                printf("%s\n", dir->d_name);
                             }
                             closedir(d);
                         }
 
+                        printf("Listing done!\n");
                         SSL_write(ssl, writeBuffer, CHUNK_SIZE);
                     }
                     break;
