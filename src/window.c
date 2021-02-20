@@ -99,8 +99,8 @@ int main(int argc, char *argv[]){
 
     win[0] = newwin(LINES, RATIOX, 0, 0);
     win[1] = newwin(RATIOY, COLS, 0, 0);
-    win[2] = newwin(10, 20, LINES - 10 / 2, COLS - 5);
-    win[3] = newwin(10, 20, LINES - 10 / 2, COLS - 5);
+    win[2] = newwin(10, 20, (LINES - 10 )/ 2, (COLS - 5)/2);
+    win[3] = newwin(10, 20, (LINES - 10 )/ 2, (COLS - 5)/2);
 
     mvwprintw(win[2], 4, 5, "login: ");
     mvwprintw(win[2], 6, 5, "pass : ");
