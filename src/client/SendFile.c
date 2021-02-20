@@ -1,6 +1,5 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <sys/socket.h>
 #include <openssl/crypto.h>
 #include <openssl/ssl.h>
 #include <string.h>
@@ -107,7 +106,7 @@ void listFiles(SSL *ssl) {
     char *tok = content;
 
     // Print the file list
-    printf("Files:\n", tok);
+    printf("Files:\n");
     while ((tok = strtok(tok, "\1")) != NULL) {
         printf("  [%s]\n", tok);
         tok = NULL;

@@ -23,13 +23,16 @@
 #include "ServerConfiguration.h"
 #include "Connection.h"
 #include "Server.h"
+#include "../shared/Configuration.h"
 
 #include "Database.h"
 
 int main(void) {
+    Item * config = Configuration__loadFromFile("resources/server.conf");
+
     ServerConfiguration serverConfiguration;
-    serverConfiguration.port = 8080;
-    serverConfiguration.rootDir = "/home/erwan/tucs_server/";
+    serverConfiguration.port = atoi(Item__getByKey(config, "port")->value);
+    serverConfiguration.rootDir = Item__getByKey(config, "rootDir")->value;
 
     SSL_CTX *ctx;
     int server;
@@ -40,11 +43,11 @@ int main(void) {
 
     char certFile[1024] = {0};
     strcpy(certFile, currentDirectory);
-    strcat(certFile, "/resources/server.cert");
+    strcat(certFile, Item__getByKey(config, "certFile")->value);
 
     char keyFile[1024] = {0};
     strcpy(keyFile, currentDirectory);
-    strcat(keyFile, "/resources/server.key");
+    strcat(keyFile, Item__getByKey(config, "keyFile")->value);
 
     SSL_library_init();
 
@@ -55,7 +58,7 @@ int main(void) {
     server = openListener(PORT);    /* create server socket */
 
     // Open database
-    MongoConnection* mongoConnection = MongoConnection__init();
+    MongoConnection* mongoConnection = MongoConnection__init(Item__getByKey(config, "dbURI")->value);
     //MongoConnection__createUser(mongoConnection, "quozul", "test2");
     const int users = MongoConnection__getUser(mongoConnection, "quozul", "test2");
 

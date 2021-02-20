@@ -1,10 +1,7 @@
 #include <mongoc/mongoc.h>
-#include <bson/bson.h>
 #include "MongoConnection.h"
 
-MongoConnection* MongoConnection__init() {
-    const char *uri_string = "mongodb://localhost:27017";
-
+MongoConnection* MongoConnection__init(char * uri_string) {
     MongoConnection* mongoConnection = malloc(sizeof(MongoConnection));
 
     mongoConnection->client = mongoc_client_new(uri_string);

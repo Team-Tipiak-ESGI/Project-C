@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.16)
 
 add_executable(TUCS_client src/client/Client.c
         src/shared/PacketTypes.h src/client/Connection.c src/client/Connection.h src/client/SendFile.h src/client/SendFile.c src/shared/ChunkSize.h
-)
+        src/shared/Configuration.c src/shared/Configuration.h src/shared/Item.c src/shared/Item.h)
 
 add_executable(TUCS_server src/server/Main.c
         # Shared
@@ -21,10 +21,10 @@ add_executable(TUCS_server src/server/Main.c
         # Database
         src/server/Database.c src/server/Database.h
         src/server/MongoConnection.h
-)
+        src/shared/Configuration.c src/shared/Configuration.h src/shared/Item.c src/shared/Item.h)
 
 target_compile_options(TUCS_client PRIVATE -Wall -Wextra)
-target_compile_options(TUCS_server PRIVATE -Wall -Wextra)
+#target_compile_options(TUCS_server PRIVATE -Wall -Wextra)
 
 find_package(OpenSSL REQUIRED)
 target_link_libraries(TUCS_server OpenSSL::SSL)
