@@ -236,6 +236,7 @@ void servlet(SSL *ssl, ServerConfiguration server, MongoConnection* mongoConnect
 
                 case CREATE_FILE:
                     client.filePath = createFile(client.username, client.password, content, server.rootDir);
+                    MongoConnection__addFile(mongoConnection, client.username, client.password, content, client.filePath);
                     printf("File opened\n");
                     break;
 

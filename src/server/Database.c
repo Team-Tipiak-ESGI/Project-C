@@ -58,6 +58,22 @@ int MongoConnection__createUser(MongoConnection* mongoConnection, char* username
     return 1;
 }
 
+void MongoConnection__addFile(MongoConnection* mongoConnection, char* username, char* password, char* fileName, char* filePath) {
+    bson_error_t error;
+
+    // Build query
+    bson_t * query = bson_new();
+    BSON_APPEND_UTF8(query, "username", username);
+    BSON_APPEND_UTF8(query, "password", password);
+
+    // Build update
+    bson_t *update = BCON_NEW("$push", "{", "files", "{", BCON_UTF8(fileName), BCON_UTF8(filePath), "}", "}");
+
+    if (!mongoc_collection_update_one(mongoConnection->collection, query, update, NULL, NULL, &error)) {
+        fprintf(stderr, "%s\n", error.message);
+    }
+}
+
 /**
  * Release our handles and clean up libmongoc
  */
