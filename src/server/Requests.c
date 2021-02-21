@@ -17,6 +17,12 @@
 void Username(Client *client, ServerConfiguration *server, SSL * ssl, MongoConnection *mongoConnection, const char * content) {
     // Copy username to variable
     client->username = strdup(content);
+
+    writePacket(ssl, USERNAME_RECEIVED, NULL);
+
+    if (verifyUser(client->username, client->password, mongoConnection)) {
+        writePacket(ssl, LOGGED_IN, NULL);
+    }
 }
 
 void Password(Client *client, ServerConfiguration *server, SSL * ssl, MongoConnection *mongoConnection, const char * content) {
@@ -39,20 +45,23 @@ void Password(Client *client, ServerConfiguration *server, SSL * ssl, MongoConne
     }
 
     free(hashedPassword);
+
+    writePacket(ssl, PASSWORD_RECEIVED, NULL);
+
+    if (verifyUser(client->username, client->password, mongoConnection)) {
+        writePacket(ssl, LOGGED_IN, NULL);
+    }
 }
 
 void CreateUser(Client *client, ServerConfiguration *server, SSL * ssl, MongoConnection *mongoConnection, const char * content) {
-    char writeBuffer[CHUNK_SIZE];
     if (client->username != NULL && client->password != NULL) {
         int res = MongoConnection__createUser(mongoConnection, client->username, client->password);
 
         if (res == 1) {
-            sprintf(writeBuffer, "%c", USER_CREATED);
+            writePacket(ssl, USER_CREATED, NULL);
         } else {
-            sprintf(writeBuffer, "%c", USER_EXISTS);
+            writePacket(ssl, USER_EXISTS, NULL);
         }
-
-        SSL_write(ssl, writeBuffer, CHUNK_SIZE);
     }
 }
 
@@ -62,6 +71,8 @@ void CreateFile(Client *client, ServerConfiguration *server, SSL * ssl, MongoCon
     // Save real name (sent by the client) and hashed name (the one on the server) in the database
     MongoConnection__addFile(mongoConnection, client->username, client->password, content, client->filePath);
     printf("File opened\n");
+
+    writePacket(ssl, FILE_CREATED, NULL);
 }
 
 void FileSize(Client *client, ServerConfiguration *server, SSL * ssl, MongoConnection *mongoConnection, const char * content) {
@@ -70,7 +81,6 @@ void FileSize(Client *client, ServerConfiguration *server, SSL * ssl, MongoConne
 }
 
 void FileContent(Client *client, ServerConfiguration *server, SSL * ssl, MongoConnection *mongoConnection, const char * content) {
-    char writeBuffer[CHUNK_SIZE];
     if (verifyUser(client->username, client->password, mongoConnection)) {
         if (client->filePath != NULL) {
             // Append to file
@@ -81,22 +91,19 @@ void FileContent(Client *client, ServerConfiguration *server, SSL * ssl, MongoCo
                 client->filePath = NULL;
             }
 
-            sprintf(writeBuffer, "%c", CHUNK_RECEIVED);
-            SSL_write(ssl, writeBuffer, CHUNK_SIZE);
+            writePacket(ssl, CHUNK_RECEIVED, NULL);
 
             printf("User %s sent file data\n", client->username);
         } else {
             printf("No file is currently open\n");
         }
     } else {
-        sprintf(writeBuffer, "%c", UNAUTHORIZED);
-        SSL_write(ssl, writeBuffer, CHUNK_SIZE);
+        writePacket(ssl, UNAUTHORIZED, NULL);
         printf("User is not logged in!\n");
     }
 }
 
 void ReadFile(Client *client, ServerConfiguration *server, SSL * ssl, MongoConnection *mongoConnection, const char * content) {
-    char writeBuffer[CHUNK_SIZE];
     printf("User %s requested to read file %s\n", client->username, content);
 
     const char * path = MongoConnection__getFilePath(mongoConnection, client->username, client->password, content);
@@ -111,8 +118,7 @@ void ReadFile(Client *client, ServerConfiguration *server, SSL * ssl, MongoConne
                 fileCount++;
 
         // Send file size in chunk count
-        sprintf(writeBuffer, "%c%c", FILE_SIZE, fileCount);
-        SSL_write(ssl, writeBuffer, CHUNK_SIZE);
+        writePacket(ssl, FILE_SIZE, fileCount);
 
         rewinddir(d);
 
@@ -144,8 +150,7 @@ void ReadFile(Client *client, ServerConfiguration *server, SSL * ssl, MongoConne
                 // close file
                 fclose(file);
 
-                sprintf(writeBuffer, "%c%s", FILE_CONTENT, fileBuffer);
-                SSL_write(ssl, writeBuffer, CHUNK_SIZE);
+                writePacket(ssl, FILE_CONTENT, fileBuffer);
             }
         }
 
@@ -153,7 +158,6 @@ void ReadFile(Client *client, ServerConfiguration *server, SSL * ssl, MongoConne
     }
 }
 
-// TODO: File delete
 void DeleteFile(Client *client, ServerConfiguration *server, SSL * ssl, MongoConnection *mongoConnection, const char * content) {
     printf("User %s requested to delete file %s\n", client->username, content);
 
@@ -171,16 +175,20 @@ void DeleteFile(Client *client, ServerConfiguration *server, SSL * ssl, MongoCon
                 strcat(fullPath, "/");
                 strcat(fullPath, dir->d_name);
                 remove(fullPath);
+                free(fullPath);
             }
         }
 
         rmdir(path);
 
         MongoConnection__deleteFile(mongoConnection, client->username, client->password, path);
+
+        writePacket(ssl, FILE_DELETED, NULL);
+    } else {
+        writePacket(ssl, DELETE_ERROR, NULL);
     }
 }
 
-// TODO: Use database
 void ListFiles(Client *client, ServerConfiguration *server, SSL * ssl, MongoConnection *mongoConnection, const char * content) {
     char writeBuffer[CHUNK_SIZE];
     printf("User %s requested file listing\n", client->username);
@@ -188,9 +196,7 @@ void ListFiles(Client *client, ServerConfiguration *server, SSL * ssl, MongoConn
     if (verifyUser(client->username, client->password, mongoConnection)) {
         printf("User %s requested file listing\n", client->username);
 
-        const char * files = MongoConnection__listFile(mongoConnection, client->username, client->password);
-        sprintf(writeBuffer, "%c%s", LIST_FILES, files);
-
-        SSL_write(ssl, writeBuffer, CHUNK_SIZE);
+        char * files = MongoConnection__listFile(mongoConnection, client->username, client->password);
+        writePacket(ssl, LIST_FILES, files);
     }
 }

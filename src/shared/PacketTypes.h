@@ -25,6 +25,12 @@ enum packet_type {
     UNAUTHORIZED = 0x60, // Sent if the client is not logged in
     USER_CREATED = 0x61, // Sent if the new user was successfully created
     USER_EXISTS = 0x62, // Sent when creating a new user if the username is already taken
+    FILE_DELETED = 0x63,
+    FILE_CREATED = 0x64,
+    LOGGED_IN = 0x65,
+    USERNAME_RECEIVED = 0x66,
+    PASSWORD_RECEIVED = 0x67,
+    DELETE_ERROR = 0x68,
 
     LIST_FILES = 0x70, // Sent by the client to request a list of all the files currently held by the server
 };

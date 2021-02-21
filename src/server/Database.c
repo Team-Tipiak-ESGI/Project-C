@@ -75,7 +75,7 @@ void MongoConnection__addFile(MongoConnection* mongoConnection, char* username, 
     }
 }
 
-void MongoConnection__deleteFile(MongoConnection* mongoConnection, char* username, char* password, const char* fileName) {
+void MongoConnection__deleteFile(MongoConnection* mongoConnection, char* username, char* password, const char* filePath) {
     bson_error_t error;
 
     // Build query
@@ -85,8 +85,8 @@ void MongoConnection__deleteFile(MongoConnection* mongoConnection, char* usernam
 
     // Build update
     // TODO: Replace filepath with filename
-    bson_t *update = BCON_NEW("$pull", "{", "files", "{", "filename", BCON_UTF8(fileName), "}", "}");
-    printf("Filepath: [%s]\n", fileName);
+    bson_t *update = BCON_NEW("$pull", "{", "files", "{", "filepath", BCON_UTF8(filePath), "}", "}");
+    printf("Filepath: [%s]\n", filePath);
 
     if (!mongoc_collection_update_one(mongoConnection->collection, query, update, NULL, NULL, &error)) {
         fprintf(stderr, "%s\n", error.message);

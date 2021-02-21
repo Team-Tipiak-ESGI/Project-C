@@ -175,6 +175,13 @@ void deleteFile(SSL *ssl, char* fileName) {
     SSL_write(ssl, msg, CHUNK_SIZE);
 
     printf("Request sent\n");
+
+    char readBuffer[CHUNK_SIZE];
+    SSL_read(ssl, readBuffer, CHUNK_SIZE);
+    if (readBuffer[0] == FILE_DELETED)
+        printf("File successfully deleted!\n");
+    else
+        printf("Something went wrong... Packet code: %hd\n", readBuffer[0]);
 }
 
 /**
@@ -195,6 +202,16 @@ void login(SSL *ssl, const char* username, const char* password) {
     // Send password
     sprintf(buffer, "%c%s", PASSWORD, password);
     SSL_write(ssl, buffer, CHUNK_SIZE);
+
+    char readBuffer[CHUNK_SIZE];
+    int state = 0;
+
+    while (state < 3) {
+        SSL_read(ssl, readBuffer, CHUNK_SIZE);
+        state += readBuffer[0] == LOGGED_IN || readBuffer[0] == USERNAME_RECEIVED || readBuffer[0] == PASSWORD_RECEIVED;
+    }
+
+    printf("Successfully logged in!\n");
 }
 
 /**
@@ -232,6 +249,10 @@ int signup(SSL *ssl, const char* username, const char* password) {
         case USER_EXISTS:
             printf("A user with the same username already exists!\n");
             return 0;
+
+        default:
+            printf("Something went wrong... Packet code: %hd\n", readBuffer[0]);
+            break;
     }
 
     return -1;

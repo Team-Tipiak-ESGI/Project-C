@@ -2,6 +2,7 @@
 #include <openssl/md5.h>
 #include "MongoConnection.h"
 #include "Database.h"
+#include "../shared/ChunkSize.h"
 
 /**
  * Verify if the given credentials are valid
@@ -142,4 +143,17 @@ void writeChunk(const char* originalFilePath, const char* content, const int chu
     printf("Data written\n");
 
     fclose(file);
+}
+
+void writePacket(SSL * ssl, char packet, char * content) {
+    char writeBuffer[CHUNK_SIZE];
+
+    if (content != NULL)
+        sprintf(writeBuffer, "%c%s", packet, content);
+    else
+        sprintf(writeBuffer, "%c", packet);
+
+    printf("Writing: [%s]\n", writeBuffer);
+
+    SSL_write(ssl, writeBuffer, CHUNK_SIZE);
 }
