@@ -186,6 +186,8 @@ void DeleteFile(Client *client, ServerConfiguration *server, SSL * ssl, MongoCon
         }
 
         rmdir(path);
+
+        MongoConnection__deleteFile(mongoConnection, client->username, client->password, path);
     }
 }
 

@@ -58,7 +58,7 @@ int MongoConnection__createUser(MongoConnection* mongoConnection, char* username
     return 1;
 }
 
-void MongoConnection__addFile(MongoConnection* mongoConnection, char* username, char* password, char* fileName, char* filePath) {
+void MongoConnection__addFile(MongoConnection* mongoConnection, char* username, char* password, const char* fileName, char* filePath) {
     bson_error_t error;
 
     // Build query
@@ -68,6 +68,24 @@ void MongoConnection__addFile(MongoConnection* mongoConnection, char* username, 
 
     // Build update
     bson_t *update = BCON_NEW("$push", "{", "files", "{", "filename", BCON_UTF8(fileName), "filepath", BCON_UTF8(filePath), "}", "}");
+
+    if (!mongoc_collection_update_one(mongoConnection->collection, query, update, NULL, NULL, &error)) {
+        fprintf(stderr, "%s\n", error.message);
+    }
+}
+
+void MongoConnection__deleteFile(MongoConnection* mongoConnection, char* username, char* password, const char* fileName) {
+    bson_error_t error;
+
+    // Build query
+    bson_t * query = bson_new();
+    BSON_APPEND_UTF8(query, "username", username);
+    BSON_APPEND_UTF8(query, "password", password);
+
+    // Build update
+    // TODO: Replace filepath with filename
+    bson_t *update = BCON_NEW("$pull", "{", "files", "{", "filepath", BCON_UTF8(fileName), "}", "}");
+    printf("Filepath: [%s]\n", fileName);
 
     if (!mongoc_collection_update_one(mongoConnection->collection, query, update, NULL, NULL, &error)) {
         fprintf(stderr, "%s\n", error.message);

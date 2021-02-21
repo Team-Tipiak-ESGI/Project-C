@@ -49,13 +49,13 @@ int main(int argc, char** argv) {
 
         login(ssl, argv[1], argv[2]);
 
-        //sendFileToSocket(ssl, argv[3]);
+        sendFileToSocket(ssl, argv[3]);
 
         char ** files = listFiles(ssl);
         printf("File: %s\n", files[0]);
 
         //downloadFile(ssl, files[0], "/home/erwan/downloaded");
-        deleteFile(ssl, files[0]);
+        //deleteFile(ssl, files[0]);
 
         SSL_free(ssl);        /* release connection state */
     }
