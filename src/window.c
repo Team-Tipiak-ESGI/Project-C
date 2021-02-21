@@ -10,6 +10,7 @@
 //parce que les structures de generation de fenetres
 //seront toutes les memes
 #include "window.h"
+#include "driver.h"
 
 // definition hauteur / largeur par defaut
 #define WIDTH 30
@@ -18,7 +19,8 @@
 #define RATIOY (LINES * 0.2)
 #define RATIOX (COLS * 0.1)
 
-//ncurses apprecie pas de generer des
+static void driver_form(int character, FORM *form_login, PANEL **panel);
+
 int main(void){
     // capture claver -- ascii table
     int character;
@@ -43,7 +45,7 @@ int main(void){
     // INIT du panel
     WINDOW *win_left_panel, *win_top_panel;
     WINDOW *win_login_panel, *sub_win_login_panel;
-    //WINDOW *win_signup_panel, *sub_win_signup_panel;
+    WINDOW *win_signup_panel, *sub_win_signup_panel;
     PANEL *panels[7];
 
     // initialialisation du formulaire de connexion
@@ -51,28 +53,28 @@ int main(void){
     FORM *form_login;
 
     // init du form inscription
-    /*
+
      FIELD *field_signup[7];
      FORM *form_signup;
-     */
+
 
     // creation des windows avant entree dans les panels
     win_left_panel = newwin(LINES, RATIOX, 0, 0); // left panel
     win_top_panel = newwin(RATIOY, COLS, 0, 0); // top panel
     win_login_panel = newwin(20, 76, (LINES - 20)/ 2, (COLS - 76)/2); // login_panel // body
     sub_win_login_panel = derwin(win_login_panel, 15, 70, 3, 3); // sub_panel // form
-    //win_signup_panel = newwin(20, 75, (LINES - 20)/ 2, (COLS - 75)/2); // password_panel
-    //sub_win_signup_panel = derwin(win_signup_panel,6,48,(LINES - 10 )/ 2, (COLS - 5)/2);
+    win_signup_panel = newwin(20, 76, (LINES - 40)/ 2, (COLS - 76)/2); // password_panel
+    sub_win_signup_panel = derwin(win_signup_panel, 15, 70, 3, 3);
 
-    mvwprintw(win_login_panel, 1, 2, "Press F4 to quit - F2 to switch between login / sign up");
+    mvwprintw(win_login_panel, 1, 2, "Press F4 to quit - F2 to switch between login / sign up forms");
 
     // box autour des win_*_panels
     box(win_top_panel, 0, 0);
     box(win_left_panel, 0, 0);
     box(win_login_panel, 0, 0);
     box(sub_win_login_panel, 0, 0);
-    //box(win_signup_panel, 0, 0);
-    //box(sub_win_signup_panel, 0, 0);
+    box(win_signup_panel, 0, 0);
+    box(sub_win_signup_panel, 0, 0);
 
     // initialisation des champs de login
     field_login[0] = new_field(1,10,0,0,0,0); // label id
@@ -81,9 +83,23 @@ int main(void){
     field_login[3] = new_field(1,10,2,10,10,0); // pass
     field_login[4] = NULL;
 
-    //mise en place des textes labels
+    // initialisation des champs de login
+    field_signup[0] = new_field(1,10,0,0,0,0); // label id
+    field_signup[1] = new_field(1,10,0,10,10,0); // id
+    field_signup[2] = new_field(1,10,2,0,0,0); // label pass
+    field_signup[3] = new_field(1,10,2,10,10,0); // pass
+    field_signup[4] = new_field(1,10,4,0,0,0); // label pass confirm
+    field_signup[5] = new_field(1,10,4,10,10,0); // pass confirm
+    field_signup[6] = NULL;
+
+    //mise en place des textes labels -- login
     set_field_buffer(field_login[0],0,"login:");
     set_field_buffer(field_login[2],0,"password:");
+
+    //mise en place des textes labels -- signup
+    set_field_buffer(field_signup[0],0,"login:");
+    set_field_buffer(field_signup[2],0,"password:");
+    set_field_buffer(field_signup[4],0,"confirm:");
 
     // CUSTOMISATION DES CHAMPS
     // label id
@@ -101,34 +117,48 @@ int main(void){
     set_field_type(field_login[3], TYPE_ALNUM);
 
     //initialisation des champs signup
-    //label id
-    //id
+    // label id
+    set_field_opts(field_signup[0], O_AUTOSKIP | O_PUBLIC | O_VISIBLE);
+    // id
+    set_field_opts(field_signup[1], O_PUBLIC | O_VISIBLE | O_ACTIVE | O_EDIT);
+    set_field_back(field_signup[1], A_UNDERLINE);
+    set_field_type(field_signup[1], TYPE_ALNUM);
     //label pass
-    //pass
-    //label confirm pass
-    //confirm pass
+    set_field_opts(field_signup[2], O_AUTOSKIP | O_PUBLIC | O_VISIBLE);
+    // pass
+    set_field_opts(field_signup[3], O_VISIBLE | O_ACTIVE | O_EDIT);
+    field_opts_off(field_signup[3], O_PUBLIC);
+    set_field_back(field_signup[3], A_UNDERLINE);
+    set_field_type(field_signup[3], TYPE_ALNUM);
+    //label pass confirm
+    set_field_opts(field_signup[4], O_AUTOSKIP | O_PUBLIC | O_VISIBLE);
+    // pass confirm
+    set_field_opts(field_signup[5], O_VISIBLE | O_ACTIVE | O_EDIT);
+    field_opts_off(field_signup[5], O_PUBLIC);
+    set_field_back(field_signup[5], A_UNDERLINE);
+    set_field_type(field_signup[5], TYPE_ALNUM);
 
     // creation du formulaire de connexion / login.
     form_login = new_form(field_login);
-    //form_signup = new_form(field_signup);
+    form_signup = new_form(field_signup);
 
     // integration formulaires dans fenetres
     set_form_win(form_login, sub_win_login_panel);
     set_form_sub(form_login, derwin(sub_win_login_panel, 10, 55, 1, 1));
-    //set_form_win(form_signup, win_signup_panel);
-    //set_form_sub(form_login, derwin(win_signup_panel, 18, 76, 1, 1));
+    set_form_win(form_signup, win_signup_panel);
+    set_form_sub(form_login, derwin(win_signup_panel, 10, 55, 1, 1));
 
     // publication formulaire login + signup
     post_form(form_login);
-//  post_form(form_signup);
+    post_form(form_signup);
 
     //mvprintw(LINES - 2, 0, "Use UP or DOWN to switch between fields");
-//    set_current_field(form_login, field_login[0]);
+    set_current_field(form_login, field_login[0]);
     refresh();
-//  wrefresh(sub_win_login_panel);
     wrefresh(win_login_panel);
     wrefresh(sub_win_login_panel);
-
+    wrefresh(win_signup_panel);
+    wrefresh(sub_win_signup_panel);
 
     // insertion dans les panels
     // ordre des panels -> stdscr-0-1-2-3
@@ -137,55 +167,18 @@ int main(void){
     panels[0] = new_panel(win_left_panel);
     panels[1] = new_panel(win_top_panel);
     panels[2] = new_panel(win_login_panel);
-    panels[3] = NULL;//new_panel(sub_win_login_panel);
+    panels[3] = new_panel(win_signup_panel);
     panels[4] = NULL;
-
     //mise a jour des panels pour finir la creation
     update_panels();
     // affichage sur ecran
     doupdate();
-
+    //hide_panel(panels[3]);
     // boucle manipulation fenetre au clavier -- exercice, sert fondamentalement a rien;
     // directement copiee, j'ai deja fait le meme exo juste avant
     while((character = getch()) != KEY_F(4))
-    {
-        switch(character) {
-            case KEY_LEFT:
-                form_driver(form_login, REQ_PREV_CHAR);
-                break;
-            case KEY_RIGHT:
-                form_driver(form_login, REQ_NEXT_CHAR);
-                break;
-                // deplacement dans le formulaire
-            case KEY_UP:
-                form_driver(form_login, REQ_PREV_FIELD);
-                form_driver(form_login, REQ_END_LINE);
-                break;
-            case KEY_DOWN:
-                form_driver(form_login, REQ_NEXT_FIELD);
-                form_driver(form_login, REQ_END_LINE);
-                break;
-                // Supprime le caractere qui est avant le curseur
-            case KEY_BACKSPACE:
-            case 127:
-                form_driver(form_login, REQ_DEL_PREV);
-                break;
-                // Supprime le caractere qui est sur le curseur
-            case KEY_DC:
-                form_driver(form_login, REQ_DEL_CHAR);
-                break;
-                // Remonter au debut ou a la fin
-            case KEY_HOME:
-                form_driver(form_login, REQ_BEG_LINE);
-                break;
-            case KEY_END:
-                form_driver(form_login, REQ_END_LINE);
-                break;
-            default:
-                form_driver(form_login, character);
-                break;
-        }
-    }
+           driver_form(character, form_login, panels);
+
     // depubliage du formulaire
     unpost_form(form_login);
     //liberation memoire
@@ -198,8 +191,8 @@ int main(void){
     delwin(win_top_panel);
     delwin(win_login_panel);
     delwin(sub_win_login_panel);
-    //delwin(win_signup_panel);
-    //delwin(sub_win_signup_panel);
+    delwin(win_signup_panel);
+    delwin(sub_win_signup_panel);
     endwin();
     return EXIT_SUCCESS;
 }

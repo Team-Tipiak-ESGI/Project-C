@@ -1,0 +1,1 @@
+static void driver_form(int character, FORM *form_login, PANEL **panel);
