@@ -49,7 +49,7 @@ int main(int argc, char** argv) {
 
         login(ssl, argv[1], argv[2]);
 
-        sendFileToSocket(ssl, argv[3]);
+        //sendFileToSocket(ssl, argv[3]);
 
         char ** files = listFiles(ssl);
         printf("File: %s\n", files[0]);
@@ -61,5 +61,6 @@ int main(int argc, char** argv) {
 
     close(server);         /* close socket */
     SSL_CTX_free(ctx);        /* release context */
-    return 0;
+
+    return EXIT_SUCCESS;
 }

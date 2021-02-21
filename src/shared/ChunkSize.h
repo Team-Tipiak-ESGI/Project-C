@@ -1,2 +1,2 @@
 //#define CHUNK_SIZE 1048576 // 1 MB
-#define CHUNK_SIZE 8192
+#define CHUNK_SIZE 1024

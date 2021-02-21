@@ -296,62 +296,66 @@ void servlet(SSL *ssl, ServerConfiguration server, MongoConnection* mongoConnect
 
                     printf("File directory: %s\n", path);
 
-                    DIR *d;
                     struct dirent *dir, *dir2;
                     int fileCount = 0;
 
-                    d = opendir(path);
+                    DIR * d = opendir(path);
                     if (d) {
-                        while ((dir = readdir(d)) != NULL)
-                            if (dir->d_type == DT_REG) /* If the entry is a regular file */
+                        while ((dir = readdir(d)) != NULL) {
+                            if (dir->d_type == DT_REG) { /* If the entry is a regular file */
+                                printf("Dir name: [%s]\n", dir->d_name);
                                 fileCount++;
+                            }
+                        }
 
                         printf("Chunk count: %d\n", fileCount);
 
                         // Send file size in chunk count
                         sprintf(writeBuffer, "%c%c", FILE_SIZE, fileCount);
+                        printf("Write buffer: [%s]\n", writeBuffer);
                         SSL_write(ssl, writeBuffer, CHUNK_SIZE);
+                        printf("File size sent\n");
 
                         rewinddir(d);
+                        printf("Dir rewinded\n");
 
                         // TO FIX: STUCK HERE
                         while ((dir2 = readdir(d)) != NULL) {
-                            printf("%s", dir2->d_name);
-                            /*if (dir->d_name[0] == '.') continue;
+                            if (dir2->d_type == DT_REG) {
+                                char *filePath = malloc(sizeof(path) + sizeof(dir->d_name));
+                                strcpy(filePath, path);
+                                strcat(filePath, "/");
+                                strcat(filePath, dir2->d_name);
 
-                            char * filePath = malloc(sizeof(userDir) + sizeof(dir->d_name));
-                            strcpy(filePath, userDir);
-                            strcat(filePath, dir->d_name);
-                            printf("File path: %s\n", filePath);
+                                // Load file content into memory
+                                FILE *file = fopen(filePath, "rb");
+                                char *fileBuffer;
+                                long fileLength;
 
-                            // Load file content into memory
-                            FILE * file = fopen(filePath, "rb");
-                            char* fileBuffer;
-                            long fileLength;
+                                // jump to end of file
+                                fseek(file, 0, SEEK_END);
+                                // get offset (used for length)
+                                fileLength = ftell(file);
 
-                            // jump to end of file
-                            fseek(file, 0, SEEK_END);
-                            // get offset (used for length)
-                            fileLength = ftell(file);
-                            // go back to start of file
-                            rewind(file);
+                                // go back to start of file
+                                rewind(file);
 
-                            // allocate memory for the fileBuffer
-                            fileBuffer = (char*)malloc(fileLength * sizeof(char));
-                            // write file data to fileBuffer
-                            fread(fileBuffer, 1, fileLength, file);
-                            // close file
-                            fclose(file);
+                                // allocate memory for the fileBuffer
+                                fileBuffer = (char *) malloc(fileLength * sizeof(char));
+                                // write file data to fileBuffer
+                                fread(fileBuffer, 1, fileLength, file);
+                                // close file
+                                fclose(file);
 
-                            printf("File content: %s\n", fileBuffer);*/
+                                printf("File content: [%s]\n", fileBuffer);
+
+                                sprintf(writeBuffer, "%c%s", FILE_CONTENT, fileBuffer);
+                                SSL_write(ssl, writeBuffer, CHUNK_SIZE);
+                            }
                         }
 
                         closedir(d);
                     }
-
-
-                    sprintf(writeBuffer, "%c%s", FILE_CONTENT, "test");
-                    SSL_write(ssl, writeBuffer, CHUNK_SIZE);
                     break;
 
                 case DELETE_FILE:

@@ -137,10 +137,11 @@ void readFile(SSL *ssl, char * fileName, char * destination) {
 
     printf("Request sent, waiting server response\n");
 
-    while (fileSize == -1 || receivedChunks < (double)fileSize / CHUNK_SIZE) {
+    do {
         SSL_read(ssl, readBuffer, CHUNK_SIZE);
-
         char * content = readBuffer + 1;
+
+        printf("Received response: [%s]\n", content);
 
         switch (readBuffer[0]) {
             case FILE_SIZE:
@@ -153,7 +154,9 @@ void readFile(SSL *ssl, char * fileName, char * destination) {
                 printf("Content: %s\n", content);
                 break;
         }
-    }
+    } while (fileSize == -1 || receivedChunks < (double)fileSize / CHUNK_SIZE);
+
+    printf("Done\n");
 
     fclose(file);
     free(msg);
