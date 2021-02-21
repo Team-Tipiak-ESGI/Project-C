@@ -21,7 +21,7 @@ add_executable(TUCS_server src/server/Main.c
         # Database
         src/server/Database.c src/server/Database.h
         src/server/MongoConnection.h
-        src/shared/Configuration.c src/shared/Configuration.h src/shared/Item.c src/shared/Item.h)
+        src/shared/Configuration.c src/shared/Configuration.h src/shared/Item.c src/shared/Item.h src/server/Requests.c src/server/Requests.h src/server/Utils.c src/server/Utils.h)
 
 target_compile_options(TUCS_client PRIVATE -Wall -Wextra)
 #target_compile_options(TUCS_server PRIVATE -Wall -Wextra)
