@@ -56,6 +56,7 @@ void CreateUser(Client *client, ServerConfiguration *server, SSL * ssl, MongoCon
     }
 }
 
+// TODO: Verify if file does not exists
 void CreateFile(Client *client, ServerConfiguration *server, SSL * ssl, MongoConnection *mongoConnection, const char * content) {
     client->filePath = createFile(client->username, client->password, content, server->rootDir);
     // Save real name (sent by the client) and hashed name (the one on the server) in the database
@@ -199,34 +200,9 @@ void ListFiles(Client *client, ServerConfiguration *server, SSL * ssl, MongoConn
     if (verifyUser(client->username, client->password, mongoConnection)) {
         printf("User %s requested file listing\n", client->username);
 
-        //MongoConnection__listFile(mongoConnection, client->username, client->password);
+        const char * files = MongoConnection__listFile(mongoConnection, client->username, client->password);
+        sprintf(writeBuffer, "%c%s", LIST_FILES, files);
 
-        sprintf(writeBuffer, "%c", LIST_FILES);
-
-        // List files in directory
-        DIR *d;
-        struct dirent *dir;
-
-        // Generate file path
-        char * hashedNameUser = getUserDir(client->username, client->password);
-        char * filePath = malloc(strlen(server->rootDir) + strlen(hashedNameUser) + 1);
-        strcpy(filePath, server->rootDir);
-        strcat(filePath, hashedNameUser);
-
-        d = opendir(filePath);
-        if (d) {
-            while ((dir = readdir(d)) != NULL) {
-                if (dir->d_name[0] == '.') continue;
-
-                // TODO: Get real file name
-                sprintf(writeBuffer, "%s%s%c", writeBuffer, dir->d_name, 1);
-            }
-            closedir(d);
-        }
-
-        free(filePath);
-
-        printf("Listing done!\n");
         SSL_write(ssl, writeBuffer, CHUNK_SIZE);
     }
 }

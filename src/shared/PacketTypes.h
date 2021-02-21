@@ -18,6 +18,8 @@ enum packet_type {
     FILE_CONTENT = 0x30, // Packet containing the content of the file
     FILE_CLOSED = 0x40,
 
+    HTTP = 72, // First byte of HTTP request is a H (ascii 72)
+
     // Status packets
     CHUNK_RECEIVED = 0x50, // Sent as a confirmation by the server when receiving file chunks
     UNAUTHORIZED = 0x60, // Sent if the client is not logged in

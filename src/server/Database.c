@@ -1,6 +1,7 @@
 #include <mongoc/mongoc.h>
 #include <openssl/sha.h>
 #include "MongoConnection.h"
+#include "../shared/ChunkSize.h"
 
 MongoConnection* MongoConnection__init(char * uri_string) {
     MongoConnection* mongoConnection = malloc(sizeof(MongoConnection));
@@ -92,8 +93,7 @@ void MongoConnection__deleteFile(MongoConnection* mongoConnection, char* usernam
     }
 }
 
-void MongoConnection__listFile(MongoConnection* mongoConnection, char* username, char* password) {
-    bson_error_t error;
+char * MongoConnection__listFile(MongoConnection* mongoConnection, char* username, char* password) {
     const bson_t *doc;
 
     // Build query
@@ -104,37 +104,58 @@ void MongoConnection__listFile(MongoConnection* mongoConnection, char* username,
     // Query
     mongoc_cursor_t *cursor = mongoc_collection_find_with_opts(mongoConnection->collection, query, NULL, NULL);
 
+    char * files = malloc(CHUNK_SIZE);
+    files[0] = 0;
+
     while (mongoc_cursor_next(cursor, &doc)) {
         bson_iter_t iter;
-        bson_type_t type;
 
         bson_iter_init(&iter, doc);
-
-        bson_iter_find(&iter, "files");
+        bson_iter_find(&iter, "files"); // Get files sub array
 
         const uint8_t * data = NULL;
         uint32_t len = 0;
         bson_iter_array(&iter, &len, &data);
 
-        bson_t * fSubArray = bson_new_from_data(data, len);
-        bson_iter_t fIter;
-        bson_iter_init(&fIter, fSubArray);
+        bson_t * subArray = bson_new_from_data(data, len);
 
-        while ((type = bson_iter_next(&fIter))) {
-            printf("Type: %d Key: [%s]\n", type, bson_iter_key(&fIter));
+        // Used as actual iterator
+        bson_iter_t subIter;
+        bson_iter_init(&subIter, subArray);
 
-            /*bson_iter_t sub;
-            bool a = bson_iter_find_descendant(&fIter, "filename", &sub);
-            printf("a: %d Address: %p\n", a, &sub);*/
+        // Used as reference
+        bson_iter_t referenceIter;
+        bson_iter_init(&referenceIter, subArray);
 
-            uint32_t length = 0;
-            const char * value = bson_iter_utf8(&fIter, NULL);
-            printf("Value: [%s] Length: %d\n", value, length);
+        // Used to store values
+        bson_iter_t baz;
+
+        while (bson_iter_next(&subIter)) {
+            const char * key = bson_iter_key(&subIter);
+
+            // Build variable path
+            char * path = malloc(sizeof key + sizeof ".filename");
+            sprintf(path, "%s.filename", key);
+
+            bson_iter_find_descendant(&referenceIter, path, &baz);
+
+            uint32_t length;
+            const char * string = bson_iter_utf8(&baz, &length);
+
+            printf("length = %d\n", length);
+            printf("value = %s\n", string);
+
+            strcat(files, string);
+            strcat(files, "\1");
+
+            free(path);
         }
     }
 
     bson_destroy(query);
     mongoc_cursor_destroy(cursor);
+
+    return files;
 }
 
 /**

@@ -84,6 +84,7 @@ void servlet(SSL *ssl, ServerConfiguration server, MongoConnection* mongoConnect
                     ListFiles(&client, &server, ssl, mongoConnection, content);
                     break;
 
+                // TODO: Add file sharing over HTTPS
                 default:
                     // HTTPS response
                     SSL_write(ssl, "HTTP/1.1 405 Method Not Allowed\n"
