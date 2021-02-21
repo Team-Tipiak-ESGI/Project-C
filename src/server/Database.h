@@ -7,3 +7,4 @@ int MongoConnection__getUser(MongoConnection* mongoConnection, char* username, c
 void MongoConnection__addFile(MongoConnection* mongoConnection, char* username, char* password, const char* fileName, char* filePath);
 char * MongoConnection__listFile(MongoConnection* mongoConnection, char* username, char* password);
 void MongoConnection__deleteFile(MongoConnection* mongoConnection, char* username, char* password, const char* fileName);
+char * MongoConnection__getFilePath(MongoConnection* mongoConnection, char* username, char* password, const char* fileName);

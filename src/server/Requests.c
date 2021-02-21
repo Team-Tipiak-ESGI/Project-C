@@ -99,13 +99,7 @@ void ReadFile(Client *client, ServerConfiguration *server, SSL * ssl, MongoConne
     char writeBuffer[CHUNK_SIZE];
     printf("User %s requested to read file %s\n", client->username, content);
 
-    char * userDir = getUserDir(client->username, client->password);
-    char * path = malloc(sizeof server->rootDir + sizeof userDir + sizeof content + 2);
-
-    strcpy(path, server->rootDir);
-    strcat(path, userDir);
-    strcat(path, "/");
-    strcat(path, content); // TODO: Adapt using the original name
+    const char * path = MongoConnection__getFilePath(mongoConnection, client->username, client->password, content);
 
     struct dirent *dir, *dir2;
     int fileCount = 0;
@@ -163,13 +157,7 @@ void ReadFile(Client *client, ServerConfiguration *server, SSL * ssl, MongoConne
 void DeleteFile(Client *client, ServerConfiguration *server, SSL * ssl, MongoConnection *mongoConnection, const char * content) {
     printf("User %s requested to delete file %s\n", client->username, content);
 
-    char * userDir = getUserDir(client->username, client->password);
-    char * path = malloc(sizeof server->rootDir + sizeof userDir + sizeof content + 2);
-
-    strcpy(path, server->rootDir);
-    strcat(path, userDir);
-    strcat(path, "/");
-    strcat(path, content); // TODO: Adapt using the original name
+    const char * path = MongoConnection__getFilePath(mongoConnection, client->username, client->password, content);
 
     printf("Deleting file %s\n", path);
 

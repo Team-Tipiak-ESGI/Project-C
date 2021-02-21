@@ -85,7 +85,7 @@ void MongoConnection__deleteFile(MongoConnection* mongoConnection, char* usernam
 
     // Build update
     // TODO: Replace filepath with filename
-    bson_t *update = BCON_NEW("$pull", "{", "files", "{", "filepath", BCON_UTF8(fileName), "}", "}");
+    bson_t *update = BCON_NEW("$pull", "{", "files", "{", "filename", BCON_UTF8(fileName), "}", "}");
     printf("Filepath: [%s]\n", fileName);
 
     if (!mongoc_collection_update_one(mongoConnection->collection, query, update, NULL, NULL, &error)) {
@@ -139,11 +139,7 @@ char * MongoConnection__listFile(MongoConnection* mongoConnection, char* usernam
 
             bson_iter_find_descendant(&referenceIter, path, &baz);
 
-            uint32_t length;
-            const char * string = bson_iter_utf8(&baz, &length);
-
-            printf("length = %d\n", length);
-            printf("value = %s\n", string);
+            const char * string = bson_iter_utf8(&baz, NULL);
 
             strcat(files, string);
             strcat(files, "\1");
@@ -156,6 +152,74 @@ char * MongoConnection__listFile(MongoConnection* mongoConnection, char* usernam
     mongoc_cursor_destroy(cursor);
 
     return files;
+}
+
+char * MongoConnection__getFilePath(MongoConnection* mongoConnection, char* username, char* password, const char* fileName) {
+    const bson_t *doc;
+
+    // Build query
+    bson_t * query = bson_new();
+    BSON_APPEND_UTF8(query, "username", username);
+    BSON_APPEND_UTF8(query, "password", password);
+
+    // Query
+    mongoc_cursor_t *cursor = mongoc_collection_find_with_opts(mongoConnection->collection, query, NULL, NULL);
+
+    while (mongoc_cursor_next(cursor, &doc)) {
+        bson_iter_t iter;
+
+        bson_iter_init(&iter, doc);
+        bson_iter_find(&iter, "files"); // Get files sub array
+
+        const uint8_t * data = NULL;
+        uint32_t len = 0;
+        bson_iter_array(&iter, &len, &data);
+
+        bson_t * subArray = bson_new_from_data(data, len);
+
+        // Used as actual iterator
+        bson_iter_t subIter;
+        bson_iter_init(&subIter, subArray);
+
+        // Used as reference
+        bson_iter_t referenceIter;
+        bson_iter_init(&referenceIter, subArray);
+
+        bson_iter_t referenceIter2;
+        bson_iter_init(&referenceIter2, subArray);
+
+        // Used to store values
+        bson_iter_t baz, foo;
+
+        while (bson_iter_next(&subIter)) {
+            const char * key = bson_iter_key(&subIter);
+
+            // Build variable path
+            char * path = malloc(sizeof key + sizeof ".filename");
+            sprintf(path, "%s.filename", key);
+
+            bson_iter_find_descendant(&referenceIter, path, &baz);
+
+            const char * string = bson_iter_utf8(&baz, NULL);
+
+            if (strcmp(string, fileName) == 0) {
+                sprintf(path, "%s.filepath", key);
+
+                bson_iter_find_descendant(&referenceIter2, path, &foo);
+
+                const char * result = bson_iter_utf8(&foo, NULL);
+
+                return result;
+            }
+
+            free(path);
+        }
+    }
+
+    bson_destroy(query);
+    mongoc_cursor_destroy(cursor);
+
+    return NULL;
 }
 
 /**
