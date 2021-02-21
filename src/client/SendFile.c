@@ -125,7 +125,13 @@ char ** listFiles(SSL *ssl) {
     return files;
 }
 
-void readFile(SSL *ssl, char * fileName, char * destination) {
+/**
+ * Request a file to the server and saves it to the given location
+ * @param ssl
+ * @param fileName
+ * @param destination
+ */
+void downloadFile(SSL *ssl, char * fileName, char * destination) {
     char readBuffer[CHUNK_SIZE];
     char* msg = malloc(sizeof(char) * CHUNK_SIZE);
 
@@ -160,6 +166,15 @@ void readFile(SSL *ssl, char * fileName, char * destination) {
 
     fclose(file);
     free(msg);
+}
+
+void deleteFile(SSL *ssl, char* fileName) {
+    char msg[CHUNK_SIZE] = {0};
+
+    sprintf(msg, "%c%s", DELETE_FILE, fileName);
+    SSL_write(ssl, msg, CHUNK_SIZE);
+
+    printf("Request sent\n");
 }
 
 /**

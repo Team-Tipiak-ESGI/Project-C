@@ -54,7 +54,8 @@ int main(int argc, char** argv) {
         char ** files = listFiles(ssl);
         printf("File: %s\n", files[0]);
 
-        readFile(ssl, files[0], "/home/erwan/downloaded");
+        //downloadFile(ssl, files[0], "/home/erwan/downloaded");
+        deleteFile(ssl, files[0]);
 
         SSL_free(ssl);        /* release connection state */
     }

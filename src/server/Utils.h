@@ -1,4 +1,3 @@
-
 unsigned char verifyUser(char* username, char* password, MongoConnection* mongoConnection);
 char* hexHash(char * input);
 char * getUserDir(const char* username, const char* password);

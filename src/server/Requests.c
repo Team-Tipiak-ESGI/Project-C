@@ -16,8 +16,7 @@
 
 void Username(Client *client, ServerConfiguration *server, SSL * ssl, MongoConnection *mongoConnection, const char * content) {
     // Copy username to variable
-    client->username = malloc(sizeof(char) * strlen(content));
-    strncpy(client->username, content, strlen(content) + 1);
+    client->username = strdup(content);
 }
 
 void Password(Client *client, ServerConfiguration *server, SSL * ssl, MongoConnection *mongoConnection, const char * content) {
@@ -59,6 +58,7 @@ void CreateUser(Client *client, ServerConfiguration *server, SSL * ssl, MongoCon
 
 void CreateFile(Client *client, ServerConfiguration *server, SSL * ssl, MongoConnection *mongoConnection, const char * content) {
     client->filePath = createFile(client->username, client->password, content, server->rootDir);
+    // Save real name (sent by the client) and hashed name (the one on the server) in the database
     MongoConnection__addFile(mongoConnection, client->username, client->password, content, client->filePath);
     printf("File opened\n");
 }
@@ -72,8 +72,6 @@ void FileContent(Client *client, ServerConfiguration *server, SSL * ssl, MongoCo
     char writeBuffer[CHUNK_SIZE];
     if (verifyUser(client->username, client->password, mongoConnection)) {
         if (client->filePath != NULL) {
-            // TODO: Save real file name and hashed file name in database
-
             // Append to file
             writeChunk(client->filePath, content, client->chunkSent);
 
@@ -108,30 +106,20 @@ void ReadFile(Client *client, ServerConfiguration *server, SSL * ssl, MongoConne
     strcat(path, "/");
     strcat(path, content); // TODO: Adapt using the original name
 
-    printf("File directory: %s\n", path);
-
     struct dirent *dir, *dir2;
     int fileCount = 0;
 
     DIR * d = opendir(path);
     if (d) {
-        while ((dir = readdir(d)) != NULL) {
-            if (dir->d_type == DT_REG) { /* If the entry is a regular file */
-                printf("Dir name: [%s]\n", dir->d_name);
+        while ((dir = readdir(d)) != NULL)
+            if (dir->d_type == DT_REG) /* If the entry is a regular file */
                 fileCount++;
-            }
-        }
-
-        printf("Chunk count: %d\n", fileCount);
 
         // Send file size in chunk count
         sprintf(writeBuffer, "%c%c", FILE_SIZE, fileCount);
-        printf("Write buffer: [%s]\n", writeBuffer);
         SSL_write(ssl, writeBuffer, CHUNK_SIZE);
-        printf("File size sent\n");
 
         rewinddir(d);
-        printf("Dir rewinded\n");
 
         // TO FIX: STUCK HERE
         while ((dir2 = readdir(d)) != NULL) {
@@ -161,8 +149,6 @@ void ReadFile(Client *client, ServerConfiguration *server, SSL * ssl, MongoConne
                 // close file
                 fclose(file);
 
-                printf("File content: [%s]\n", fileBuffer);
-
                 sprintf(writeBuffer, "%c%s", FILE_CONTENT, fileBuffer);
                 SSL_write(ssl, writeBuffer, CHUNK_SIZE);
             }
@@ -172,10 +158,38 @@ void ReadFile(Client *client, ServerConfiguration *server, SSL * ssl, MongoConne
     }
 }
 
+// TODO: File delete
 void DeleteFile(Client *client, ServerConfiguration *server, SSL * ssl, MongoConnection *mongoConnection, const char * content) {
     printf("User %s requested to delete file %s\n", client->username, content);
+
+    char * userDir = getUserDir(client->username, client->password);
+    char * path = malloc(sizeof server->rootDir + sizeof userDir + sizeof content + 2);
+
+    strcpy(path, server->rootDir);
+    strcat(path, userDir);
+    strcat(path, "/");
+    strcat(path, content); // TODO: Adapt using the original name
+
+    printf("Deleting file %s\n", path);
+
+    struct dirent *dir;
+    DIR * d = opendir(path);
+    if (d) {
+        while ((dir = readdir(d)) != NULL) {
+            if (dir->d_type == DT_REG) {
+                char * fullPath = malloc(sizeof path + sizeof dir->d_name + 1);
+                strcpy(fullPath, path);
+                strcat(fullPath, "/");
+                strcat(fullPath, dir->d_name);
+                remove(fullPath);
+            }
+        }
+
+        rmdir(path);
+    }
 }
 
+// TODO: Use database
 void ListFiles(Client *client, ServerConfiguration *server, SSL * ssl, MongoConnection *mongoConnection, const char * content) {
     char writeBuffer[CHUNK_SIZE];
     printf("User %s requested file listing\n", client->username);

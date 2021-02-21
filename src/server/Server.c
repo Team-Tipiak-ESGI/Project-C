@@ -48,7 +48,6 @@ void servlet(SSL *ssl, ServerConfiguration server, MongoConnection* mongoConnect
             printf("Message from socket (%d) (packet type: %d) : %s\n", bytes, firstByte, content);
 
             switch (firstByte) {
-                // TODO: Add option to delete and read a file
                 case USERNAME:
                     Username(&client, &server, ssl, mongoConnection, content);
                     break;

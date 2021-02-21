@@ -1,5 +1,4 @@
 #include <openssl/ssl.h>
-#include <openssl/sha.h>
 #include <openssl/md5.h>
 #include "MongoConnection.h"
 #include "Database.h"

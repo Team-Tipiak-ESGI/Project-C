@@ -37,7 +37,6 @@ int main(void) {
     SSL_CTX *ctx;
     int server;
 
-    // TODO: Put cert files in config file
     char currentDirectory[1024] = {0};
     getcwd(currentDirectory, 1024);
 
@@ -54,7 +53,6 @@ int main(void) {
     ctx = initServerCTX();        /* initialize SSL */
     loadCertificates(ctx, certFile, keyFile); /* load certs */
 
-    // TODO: Put port in config file
     server = openListener(PORT);    /* create server socket */
 
     // Open database
