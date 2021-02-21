@@ -59,9 +59,9 @@ int main(void){
     // creation des windows avant entree dans les panels
     win_left_panel = newwin(LINES, RATIOX, 0, 0); // left panel
     win_top_panel = newwin(RATIOY, COLS, 0, 0); // top panel
-    win_login_panel = newwin(10, 50, (LINES - 10)/ 2, (COLS - 50)/2); // login_panel // body
-    sub_win_login_panel = derwin(win_login_panel, LINES / 2, COLS / 2, 3, 1); // sub_panel // form
-    //win_signup_panel = newwin(10, 50, (LINES - 10 )/ 2, (COLS - 5)/2); // password_panel
+    win_login_panel = newwin(20, 76, (LINES - 20)/ 2, (COLS - 76)/2); // login_panel // body
+    sub_win_login_panel = derwin(win_login_panel, 15, 70, 3, 3); // sub_panel // form
+    //win_signup_panel = newwin(20, 75, (LINES - 20)/ 2, (COLS - 75)/2); // password_panel
     //sub_win_signup_panel = derwin(win_signup_panel,6,48,(LINES - 10 )/ 2, (COLS - 5)/2);
 
     mvwprintw(win_login_panel, 1, 2, "Press F4 to quit - F2 to switch between login / sign up");
@@ -76,9 +76,9 @@ int main(void){
 
     // initialisation des champs de login
     field_login[0] = new_field(1,10,0,0,0,0); // label id
-    field_login[1] = new_field(1,15,0,15,0,0); // id
+    field_login[1] = new_field(1,10,0,10,10,0); // id
     field_login[2] = new_field(1,10,2,0,0,0); // label pass
-    field_login[3] = new_field(1,15,2,15,0,0); // pass
+    field_login[3] = new_field(1,10,2,10,10,0); // pass
     field_login[4] = NULL;
 
     //mise en place des textes labels
@@ -90,14 +90,14 @@ int main(void){
     set_field_opts(field_login[0], O_AUTOSKIP | O_PUBLIC | O_VISIBLE);
     // id
     set_field_opts(field_login[1], O_PUBLIC | O_VISIBLE | O_ACTIVE | O_EDIT);
-    set_field_back(field_login[1],A_UNDERLINE);
+    set_field_back(field_login[1], A_UNDERLINE);
     set_field_type(field_login[1], TYPE_ALNUM);
     //label pass
     set_field_opts(field_login[2], O_AUTOSKIP | O_PUBLIC | O_VISIBLE);
     // pass
     set_field_opts(field_login[3], O_VISIBLE | O_ACTIVE | O_EDIT);
     field_opts_off(field_login[3], O_PUBLIC);
-    set_field_back(field_login[3],A_UNDERLINE);
+    set_field_back(field_login[3], A_UNDERLINE);
     set_field_type(field_login[3], TYPE_ALNUM);
 
     //initialisation des champs signup
@@ -114,7 +114,7 @@ int main(void){
 
     // integration formulaires dans fenetres
     set_form_win(form_login, sub_win_login_panel);
-    set_form_sub(form_login, derwin(sub_win_login_panel, 18, 76, 3, 1));
+    set_form_sub(form_login, derwin(sub_win_login_panel, 10, 55, 1, 1));
     //set_form_win(form_signup, win_signup_panel);
     //set_form_sub(form_login, derwin(win_signup_panel, 18, 76, 1, 1));
 
@@ -123,11 +123,11 @@ int main(void){
 //  post_form(form_signup);
 
     //mvprintw(LINES - 2, 0, "Use UP or DOWN to switch between fields");
-    //set_current_field(form_login, field_login[0]);
+//    set_current_field(form_login, field_login[0]);
     refresh();
-    wrefresh(sub_win_login_panel);
+//  wrefresh(sub_win_login_panel);
     wrefresh(win_login_panel);
-    //wrefresh(sub_win_login_panel);
+    wrefresh(sub_win_login_panel);
 
 
     // insertion dans les panels
@@ -136,9 +136,9 @@ int main(void){
 
     panels[0] = new_panel(win_left_panel);
     panels[1] = new_panel(win_top_panel);
-    panels[2] = NULL; new_panel(win_login_panel);
-    panels[3] = NULL; new_panel(sub_win_login_panel);
-    //panels[4] = NULL;
+    panels[2] = new_panel(win_login_panel);
+    panels[3] = NULL;//new_panel(sub_win_login_panel);
+    panels[4] = NULL;
 
     //mise a jour des panels pour finir la creation
     update_panels();
@@ -149,15 +149,14 @@ int main(void){
     // directement copiee, j'ai deja fait le meme exo juste avant
     while((character = getch()) != KEY_F(4))
     {
-        switch(character)
-        {
+        switch(character) {
             case KEY_LEFT:
                 form_driver(form_login, REQ_PREV_CHAR);
                 break;
             case KEY_RIGHT:
                 form_driver(form_login, REQ_NEXT_CHAR);
                 break;
-            // deplacement dans le formulaire
+                // deplacement dans le formulaire
             case KEY_UP:
                 form_driver(form_login, REQ_PREV_FIELD);
                 form_driver(form_login, REQ_END_LINE);
@@ -166,24 +165,24 @@ int main(void){
                 form_driver(form_login, REQ_NEXT_FIELD);
                 form_driver(form_login, REQ_END_LINE);
                 break;
-            // Supprime le caractere qui est avant le curseur
+                // Supprime le caractere qui est avant le curseur
             case KEY_BACKSPACE:
             case 127:
                 form_driver(form_login, REQ_DEL_PREV);
                 break;
-            // Supprime le caractere qui est sur le curseur
+                // Supprime le caractere qui est sur le curseur
             case KEY_DC:
                 form_driver(form_login, REQ_DEL_CHAR);
                 break;
-            default:
-                form_driver(form_login, character);
-                break;
-            // Remonter au debut ou a la fin
+                // Remonter au debut ou a la fin
             case KEY_HOME:
                 form_driver(form_login, REQ_BEG_LINE);
                 break;
             case KEY_END:
                 form_driver(form_login, REQ_END_LINE);
+                break;
+            default:
+                form_driver(form_login, character);
                 break;
         }
     }
