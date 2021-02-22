@@ -10,7 +10,6 @@
 //parce que les structures de generation de fenetres
 //seront toutes les memes
 #include "window.h"
-#include "driver.h"
 
 // definition hauteur / largeur par defaut
 #define WIDTH 30
@@ -76,7 +75,6 @@ int main(void){
     // affichage sur ecran
     doupdate();
     // boucle manipulation fenetre au clavier
-    // voir driver.c pour plus infos.
 
     // init du form inscription
     WINDOW *win_signup_panel;
