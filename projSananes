@@ -1,0 +1,15 @@
+Dans l'ensemble on développerait plusieurs petites applications : client, serveur.
+
+Le client pourrait envoyer et reçevoir des fichiers, quelque soient leur nature sur le serveur.
+
+il y'aurait la possibilité de configurer l'application client et serveur
+
+possibilité de synchroniser la liste des fichiers et de les télécharger ( automatique ou manuelle )
+
+Possibilité de partager les fichiers, uniquement entre utilisateurs inscrits ( et via le client )
+
+liste des librairies : 
+
+libwebsockets : https://libwebsockets.org/
+ncurses
+SGDB : MongoDB : http://mongoc.org/
