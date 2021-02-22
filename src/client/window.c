@@ -6,10 +6,13 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <openssl/>
 
 //parce que les structures de generation de fenetres
 //seront toutes les memes
 #include "window.h"
+#include "SendFile.h"
+#include "Connection.h"
 
 // definition hauteur / largeur par defaut
 #define WIDTH 30
@@ -19,6 +22,8 @@
 #define RATIOX (COLS * 0.1)
 
 int main(void){
+    // generation SSL pour login / signup
+    SSL *ssl;
     // capture claver -- ascii table
     int character;
     int choices = 0;
@@ -42,10 +47,8 @@ int main(void){
     noecho(); // pas de texte au clavier quand on fait des input;
 
     // INIT du panel
-    WINDOW *win_left_panel, *win_top_panel, *sub_win_login, *sub_win_signup_panel;
+    WINDOW *win_left_panel, *win_top_panel, *sub_win_login_panel, *sub_win_signup_panel;
     PANEL *panel_main[3];
-    PANEL *panel_signup[3];
-    PANEL *panel_login[3];
 
     // initialialisation formulaires
 
@@ -78,7 +81,7 @@ int main(void){
 
     // init du form inscription
     WINDOW *win_signup_panel;
-    FIELD *field_signup[7];
+    FIELD *field_signup[8];
 
     // creation des fenetres avant entree dans panels
     win_signup_panel = newwin(20, 76, (LINES + 15) / 2, (COLS - 76) / 2); // password_panel
@@ -99,12 +102,14 @@ int main(void){
     field_signup[3] = new_field(1,30,2,15,0,0); // pass
     field_signup[4] = new_field(1,10,4,0,0,0); // label pass confirm
     field_signup[5] = new_field(1,30,4,15,0,0); // pass confirm
-    field_signup[6] = NULL;
+    field_signup[6] = NULL;//new_field(1,4,8,30,0,0); // <OK>
+    field_signup[7] = NULL;
 
     //mise en place des textes labels -- signup
     set_field_buffer(field_signup[0], 0, "login:");
     set_field_buffer(field_signup[2], 0, "password:");
     set_field_buffer(field_signup[4], 0, "confirm:");
+    //set_field_buffer(field_signup[6], 0,"<OK>");
 
     // CUSTOMISATION DES CHAMPS
     // label id
@@ -143,8 +148,8 @@ int main(void){
     wrefresh(win_signup_panel);
     wrefresh(sub_win_signup_panel);
 // <---------------------- portion LOGIN -------------------->
-    WINDOW *win_login_panel, *sub_win_login_panel;
-    FIELD *field_login[5];
+    WINDOW *win_login_panel;
+    FIELD *field_login[6];
 
     win_login_panel = newwin(20, 76, (LINES - 30) / 2, (COLS - 76) / 2); // login_panel // body
     sub_win_login_panel = derwin(win_login_panel, 15, 70, 3, 3); // sub_panel // form
@@ -160,11 +165,14 @@ int main(void){
     field_login[1] = new_field(1,30,0,15,0,0); // id
     field_login[2] = new_field(1,10,2,0,0,0); // label pass
     field_login[3] = new_field(1,30,2,15,10,0); // pass
-    field_login[4] = NULL;
+    field_login[4] = NULL;//new_field(1,4,8,30,0,0); // <OK>
+    field_login[5] = NULL;
+
 
     //mise en place des textes labels -- login
     set_field_buffer(field_login[0],0,"login:");
     set_field_buffer(field_login[2],0,"password:");
+    //set_field_buffer(field_login[4],0,"<OK>");
 
     // CUSTOMISATION DES CHAMPS
     // label id
@@ -283,7 +291,12 @@ int main(void){
             set_current_field(form_login, field_login[1]);
             choices = 0;
         }
-        //wrefresh(sub_win_login);
+        if (character == KEY_ENTER && choices == 1) {
+            if(strcmp(field_signup[3],field_signup[5]))
+                signup(ssl, field_signup[1], field_signup[3]);
+        } else if (choices == 0 && character == KEY_ENTER) {
+            login(ssl, field_login[1], field_login[3]);
+        }
     }
 
 
