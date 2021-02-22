@@ -14,9 +14,9 @@
  * Send file content to given socket
  * @param socket Socket's id
  * @param filename Path to access the file
- * @return
+ * @return success (1) or error (0)
  */
-void sendFileToSocket(SSL *ssl, const char* filename) {
+int sendFileToSocket(SSL *ssl, const char* filename) {
     FILE* filePtr;
     unsigned char* fileBuffer;
     long fileLength;
@@ -71,7 +71,7 @@ void sendFileToSocket(SSL *ssl, const char* filename) {
         switch (readBuffer[0]) {
             case UNAUTHORIZED:
                 printf("Not authorized!\n");
-                break;
+                return 0;
 
             case CHUNK_RECEIVED:
                 printf("Chunk received by server!\n");
@@ -85,11 +85,14 @@ void sendFileToSocket(SSL *ssl, const char* filename) {
 
     // Close file
     fclose(filePtr);
+
+    return 1;
 }
 
 /**
  * Ask server for file list and print the list
  * @param ssl
+ * @return List of files as a '\1' separated string or NULL
  */
 char ** listFiles(SSL *ssl) {
     char readBuffer[CHUNK_SIZE];
@@ -130,8 +133,9 @@ char ** listFiles(SSL *ssl) {
  * @param ssl
  * @param fileName
  * @param destination
+ * @return success (1) or error (0)
  */
-void downloadFile(SSL *ssl, char * fileName, char * destination) {
+int downloadFile(SSL *ssl, char * fileName, char * destination) {
     char readBuffer[CHUNK_SIZE];
     char* msg = malloc(sizeof(char) * CHUNK_SIZE);
 
@@ -159,6 +163,9 @@ void downloadFile(SSL *ssl, char * fileName, char * destination) {
                 receivedChunks++;
                 printf("Content: %s\n", content);
                 break;
+            default:
+                printf("Something went wrong... Packet code: %hd\n", readBuffer[0]);
+                return 0;
         }
     } while (fileSize == -1 || receivedChunks < (double)fileSize / CHUNK_SIZE);
 
@@ -166,9 +173,17 @@ void downloadFile(SSL *ssl, char * fileName, char * destination) {
 
     fclose(file);
     free(msg);
+
+    return 1;
 }
 
-void deleteFile(SSL *ssl, char* fileName) {
+/**
+ * Delete a given file
+ * @param ssl
+ * @param fileName Distant name of the file to delete
+ * @return success (1) or error (0)
+ */
+int deleteFile(SSL *ssl, char* fileName) {
     char msg[CHUNK_SIZE] = {0};
 
     sprintf(msg, "%c%s", DELETE_FILE, fileName);
@@ -178,19 +193,22 @@ void deleteFile(SSL *ssl, char* fileName) {
 
     char readBuffer[CHUNK_SIZE];
     SSL_read(ssl, readBuffer, CHUNK_SIZE);
-    if (readBuffer[0] == FILE_DELETED)
+    if (readBuffer[0] == FILE_DELETED) {
         printf("File successfully deleted!\n");
-    else
+        return 1;
+    } else
         printf("Something went wrong... Packet code: %hd\n", readBuffer[0]);
+    return 0;
 }
 
 /**
- * Function to send credentials to server
+ * Send credentials to the server and log in
  * @param ssl
- * @param username
- * @param password
+ * @param username Username to log in with
+ * @param password Password to log in with
+ * @return success (1) or error (0)
  */
-void login(SSL *ssl, const char* username, const char* password) {
+int login(SSL *ssl, const char* username, const char* password) {
     printf("Logging in with credentials [%s] [%s]...\n", username, password);
 
     char* buffer = malloc(sizeof(char) * CHUNK_SIZE);
@@ -208,17 +226,20 @@ void login(SSL *ssl, const char* username, const char* password) {
 
     while (state < 3) {
         SSL_read(ssl, readBuffer, CHUNK_SIZE);
-        state += readBuffer[0] == LOGGED_IN || readBuffer[0] == USERNAME_RECEIVED || readBuffer[0] == PASSWORD_RECEIVED;
+        if (readBuffer[0] == LOGGED_IN || readBuffer[0] == USERNAME_RECEIVED || readBuffer[0] == PASSWORD_RECEIVED) state++;
+        else return 0;
     }
 
     printf("Successfully logged in!\n");
+    return 1;
 }
 
 /**
- * Create an account with the given credentials
+ * Create an account and sign in with the given credentials
  * @param ssl
  * @param username
  * @param password
+ * @return success (1), error (0), username taken (-1)
  */
 int signup(SSL *ssl, const char* username, const char* password) {
     printf("Signing up with credentials [%s] [%s]...\n", username, password);
@@ -248,12 +269,12 @@ int signup(SSL *ssl, const char* username, const char* password) {
 
         case USER_EXISTS:
             printf("A user with the same username already exists!\n");
-            return 0;
+            return -1;
 
         default:
             printf("Something went wrong... Packet code: %hd\n", readBuffer[0]);
             break;
     }
 
-    return -1;
+    return 0;
 }
