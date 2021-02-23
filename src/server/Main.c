@@ -16,7 +16,6 @@
 
 #endif
 
-#define PORT 8080
 #include "../shared/ChunkSize.h"
 
 #include "../shared/PacketTypes.h"
@@ -53,7 +52,7 @@ int main(void) {
     ctx = initServerCTX();        /* initialize SSL */
     loadCertificates(ctx, certFile, keyFile); /* load certs */
 
-    server = openListener(PORT);    /* create server socket */
+    server = openListener(serverConfiguration.port);    /* create server socket */
 
     // Open database
     MongoConnection* mongoConnection = MongoConnection__init(Item__getByKey(config, "dbURI")->value);

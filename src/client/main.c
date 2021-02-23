@@ -19,9 +19,13 @@
 #include "../shared/PacketTypes.h"
 #include "Connection.h"
 #include "SendFile.h"
+#include "window.h"
+#include "../shared/Configuration.h"
 
 
 int main(int argc, char** argv) {
+    Item * config = Configuration__loadFromFile("resources/client.conf");
+
     printf("%d\n", argc);
     
     SSL_CTX *ctx;
@@ -31,7 +35,7 @@ int main(int argc, char** argv) {
     SSL_library_init();
 
     ctx = initCTX();
-    server = openConnection("127.0.0.1", 8080);
+    server = openConnection(Item__getByKey(config, "address")->value, atoi(Item__getByKey(config, "port")->value));
     ssl = SSL_new(ctx);      /* create new SSL connection state */
     SSL_set_fd(ssl, server);    /* attach the socket descriptor */
 
@@ -56,6 +60,8 @@ int main(int argc, char** argv) {
 
         char * username;
         char * password;
+
+        window(ssl);
 
         while (1) {
             fputs("Enter command: ", stdin);

@@ -6,7 +6,8 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <openssl/>
+
+#include <openssl/bio.h>
 
 //parce que les structures de generation de fenetres
 //seront toutes les memes
@@ -21,9 +22,8 @@
 #define RATIOY (LINES * 0.2)
 #define RATIOX (COLS * 0.1)
 
-int main(void){
+int window(SSL*ssl){
     // generation SSL pour login / signup
-    SSL *ssl;
     // capture claver -- ascii table
     int character;
     int choices = 0;
