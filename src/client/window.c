@@ -291,11 +291,13 @@ int window(SSL*ssl){
             set_current_field(form_login, field_login[1]);
             choices = 0;
         }
-        if (character == KEY_ENTER && choices == 1) {
-            if(strcmp(field_signup[3],field_signup[5]))
-                signup(ssl, field_signup[1], field_signup[3]);
-        } else if (choices == 0 && character == KEY_ENTER) {
-            login(ssl, field_login[1], field_login[3]);
+        if (choices == 1 && (character == 10 || character == KEY_ENTER)) {
+            if (!strcmp(field_signup[3], field_signup[5]))
+                if (signup(ssl, field_signup[1], field_signup[3]))
+                    break;
+        } else if (choices == 0 && (character == 10 || character == KEY_ENTER)) {
+            if (login(ssl, field_login[1], field_login[3]))
+                break;
         }
     }
 
