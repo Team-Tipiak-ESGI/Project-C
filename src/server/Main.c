@@ -87,6 +87,8 @@ int main(void) {
             close(client);          /* close connection */
 
             printf("Connection closed.\n");
+
+            break;
         } else if (pid < 0) {
             // Fork error
             printf("PID: %d\n", pid);
@@ -96,4 +98,5 @@ int main(void) {
 
     close(server);          /* close server socket */
     SSL_CTX_free(ctx);         /* release context */
+    return EXIT_SUCCESS;
 }

@@ -92,7 +92,7 @@ int sendFileToSocket(SSL *ssl, const char* filename) {
 /**
  * Ask server for file list and print the list
  * @param ssl
- * @return List of files as a '\1' separated string or NULL
+ * @return List of files as a double dimension array separated string or NULL
  */
 char ** listFiles(SSL *ssl) {
     char readBuffer[CHUNK_SIZE];
