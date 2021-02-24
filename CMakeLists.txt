@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.16)
 add_executable(TUCS_client src/client/main.c
         src/shared/PacketTypes.h src/client/Connection.c src/client/Connection.h src/client/SendFile.h src/client/SendFile.c src/shared/ChunkSize.h
         src/client/window.c src/client/window.h
-        src/shared/Configuration.c src/shared/Configuration.h src/shared/Item.c src/shared/Item.h)
+        src/shared/Configuration.c src/shared/Configuration.h src/shared/Item.c src/shared/Item.h src/client/cli.c src/client/cli.h)
 
 add_executable(TUCS_server src/server/main.c
         # Shared
@@ -17,7 +17,7 @@ add_executable(TUCS_server src/server/main.c
 
         # Headers
         src/server/ServerConfiguration.h
-        src/server/main.h
+        src/server/Client.h
 
         # Database
         src/server/Database.c src/server/Database.h
@@ -45,7 +45,8 @@ include_directories( ${CURSES_INCLUDE_DIRS} )
 target_link_libraries( TUCS_client ${CURSES_LIBRARIES} )
 
 target_link_libraries(TUCS_server /usr/lib/x86_64-linux-gnu/libmongoc-1.0.so.0 /usr/lib/x86_64-linux-gnu/libbson-1.0.so.0)
-target_link_libraries(TUCS_client /usr/lib/x86_64-linux-gnu/libpanel.so)
+target_link_libraries(TUCS_client /usr/lib/x86_64-linux-gnu/libpanelw.so)
+target_link_libraries(TUCS_client /usr/lib/x86_64-linux-gnu/libmenuw.so)
 
 
 file(COPY resources DESTINATION .)
