@@ -63,6 +63,7 @@ int main(int argc, char** argv) {
 
         if (argc > 1 && !strcmp(argv[1], "gui")) {
             window_login(ssl);
+            window_items(ssl);
         } else {
             cli(ssl);
         }

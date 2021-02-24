@@ -24,7 +24,28 @@
 // permet de determiner la taille du tableau en divisant la taille max du tab par le ptr = 0 du dit tableau
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 
+static char* trim_whitespaces(char *str)
+{
+    char *end;
 
+    // trim leading space
+    while(*str == 32)
+        str++;
+
+    if(*str == 0) // all spaces?
+        return str;
+
+    // trim trailing space
+    end = str + strnlen(str, 128) - 1;
+
+    while(end > str && *end == 32)
+        end--;
+
+    // write new null terminator
+    *(end+1) = '\0';
+
+    return str;
+}
 
 void window_items(SSL *ssl){
     ITEM **fichiersUpload, **fichiersDownload;
@@ -361,13 +382,21 @@ int window_login(SSL *ssl) {
             set_current_field(form_login, field_login[1]);
             choices = 0;
         }
+
         if (choices == 1 && (character == 10 || character == KEY_ENTER)) {
+
             if (!strcmp(field_signup[3], field_signup[5]))
                 if (signup(ssl, field_signup[1], field_signup[3]))
                     break;
+
         } else if (choices == 0 && (character == 10 || character == KEY_ENTER)) {
-            if (login(ssl, field_login[1], field_login[3]))
+
+            const char * username = trim_whitespaces(field_buffer(field_login[1], 0));
+            const char * password = trim_whitespaces(field_buffer(field_login[3], 0));
+
+            if (login(ssl, username, password))
                 break;
+
         }
     }
 
