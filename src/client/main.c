@@ -61,7 +61,7 @@ int main(int argc, char** argv) {
         char * username;
         char * password;
 
-        window(ssl);
+        window_login(ssl);
 
         while (1) {
             fputs("Enter command: ", stdin);
