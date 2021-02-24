@@ -22,6 +22,8 @@ void Username(Client *client, ServerConfiguration *server, SSL * ssl, MongoConne
 
     if (verifyUser(client->username, client->password, mongoConnection)) {
         writePacket(ssl, LOGGED_IN, NULL);
+    } else {
+        writePacket(ssl, UNAUTHORIZED, NULL);
     }
 }
 
@@ -50,6 +52,8 @@ void Password(Client *client, ServerConfiguration *server, SSL * ssl, MongoConne
 
     if (verifyUser(client->username, client->password, mongoConnection)) {
         writePacket(ssl, LOGGED_IN, NULL);
+    } else {
+        writePacket(ssl, UNAUTHORIZED, NULL);
     }
 }
 
@@ -62,6 +66,8 @@ void CreateUser(Client *client, ServerConfiguration *server, SSL * ssl, MongoCon
         } else {
             writePacket(ssl, USER_EXISTS, NULL);
         }
+    } else {
+        writePacket(ssl, UNKNOWN_ERROR, NULL);
     }
 }
 
@@ -71,12 +77,12 @@ void CreateFile(Client *client, ServerConfiguration *server, SSL * ssl, MongoCon
         client->filePath = createFile(client->username, client->password, content, server->rootDir);
 
         // If not already in database
-        //if (MongoConnection__getFilePath(mongoConnection, client->username, client->password, content) == NULL) {
+        if (MongoConnection__getFilePath(mongoConnection, client->username, client->password, content) == NULL) {
 
             // Save real name (sent by the client) and hashed name (the one on the server) in the database
             MongoConnection__addFile(mongoConnection, client->username, client->password, content, client->filePath);
 
-        //}
+        }
 
         printf("File opened.\n");
 
@@ -135,7 +141,9 @@ void ReadFile(Client *client, ServerConfiguration *server, SSL * ssl, MongoConne
                     fileCount++;
 
             // Send file size in chunk count
-            writePacket(ssl, FILE_SIZE, fileCount);
+            char * packetContent = malloc(10);
+            sprintf(packetContent, "%c", fileCount);
+            writePacket(ssl, FILE_SIZE, packetContent);
 
             rewinddir(d);
 

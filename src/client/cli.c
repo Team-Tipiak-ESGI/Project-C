@@ -51,14 +51,21 @@ void cli(SSL*ssl) {
                    "l: Login\n"
                    "s: Signup\n"
                    "ls: List files\n"
-                   "dl [filename]: Download file\n"
+                   "dl [filename] [destination]: Download file\n"
                    "up [filename]: Upload file\n"
                    "rm [filename]: Remove file\n");
         else if (!strcmp(action, "up"))
             sendFileToSocket(ssl, value);
-        else if (!strcmp(action, "dl"))
-            downloadFile(ssl, value, "/home/erwan/downloaded");
-        else if (!strcmp(action, "rm"))
+        else if (!strcmp(action, "dl")) {
+            char * dest = strtok(tok, " ");
+            tok = NULL;
+
+            if (value == NULL || dest == NULL) {
+                printf("Distant file or destination missing.\n");
+            } else {
+                downloadFile(ssl, value, dest);
+            }
+        } else if (!strcmp(action, "rm"))
             deleteFile(ssl, value);
         else if (!strcmp(action, "ls"))
             listFiles(ssl);

@@ -145,8 +145,11 @@ int downloadFile(SSL *ssl, char * fileName, char * destination) {
     char readBuffer[CHUNK_SIZE];
     char* msg = malloc(sizeof(char) * CHUNK_SIZE);
 
+    FILE * file = fopen(destination, "wb");
+    fclose(file);
+
     int fileSize = -1, receivedChunks = 0;
-    FILE * file = fopen(destination, "ab+");
+    file = fopen(destination, "ab+");
 
     sprintf(msg, "%c%s", READ_FILE, fileName);
     SSL_write(ssl, msg, CHUNK_SIZE);
@@ -156,8 +159,6 @@ int downloadFile(SSL *ssl, char * fileName, char * destination) {
     do {
         SSL_read(ssl, readBuffer, CHUNK_SIZE);
         char * content = readBuffer + 1;
-
-        printf("Received response: [%s]\n", content);
 
         switch (readBuffer[0]) {
             case FILE_SIZE:
@@ -266,20 +267,27 @@ int signup(SSL *ssl, const char* username, const char* password) {
 
     // Wait for server's response
     char readBuffer[CHUNK_SIZE];
-    SSL_read(ssl, readBuffer, CHUNK_SIZE);
+    while (1) {
+        SSL_read(ssl, readBuffer, CHUNK_SIZE);
 
-    switch (readBuffer[0]) {
-        case USER_CREATED:
-            printf("User successfully created!\n");
-            return 1;
+        switch (readBuffer[0]) {
+            case USER_CREATED:
+                printf("User successfully created!\n");
+                return 1;
 
-        case USER_EXISTS:
-            printf("A user with the same username already exists!\n");
-            return -1;
+            case USER_EXISTS:
+            case LOGGED_IN:
+                printf("A user with the same username already exists!\n");
+                return -1;
 
-        default:
-            printf("Something went wrong... Packet code: %hd\n", readBuffer[0]);
-            break;
+            case USERNAME_RECEIVED:
+            case PASSWORD_RECEIVED:
+                break;
+
+            default:
+                printf("Something went wrong... Packet code: %hd\n", readBuffer[0]);
+                break;
+        }
     }
 
     return 0;
