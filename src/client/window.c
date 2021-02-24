@@ -109,6 +109,9 @@ void window_items(SSL *ssl){
     //ajout markeur pour dire si le fichier a ete pointe ou non
     set_menu_mark(menu_fichiers_download," * ");
 
+    //refreshing
+    refresh();
+
     // modification des param avant pubage du menu
     post_menu(menu_fichiers_download);
     wrefresh(win_download_panel);
