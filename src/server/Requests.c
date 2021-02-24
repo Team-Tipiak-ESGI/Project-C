@@ -67,17 +67,29 @@ void CreateUser(Client *client, ServerConfiguration *server, SSL * ssl, MongoCon
 
 // TODO: Verify if file does not exists
 void CreateFile(Client *client, ServerConfiguration *server, SSL * ssl, MongoConnection *mongoConnection, const char * content) {
-    client->filePath = createFile(client->username, client->password, content, server->rootDir);
-    // Save real name (sent by the client) and hashed name (the one on the server) in the database
-    MongoConnection__addFile(mongoConnection, client->username, client->password, content, client->filePath);
-    printf("File opened\n");
+    if (verifyUser(client->username, client->password, mongoConnection)) {
+        if (MongoConnection__getFilePath(mongoConnection, client->username, client->password, content) != NULL) {
+            writePacket(ssl, FILE_EXISTS, NULL);
+        } else {
+            client->filePath = createFile(client->username, client->password, content, server->rootDir);
+            // Save real name (sent by the client) and hashed name (the one on the server) in the database
+            MongoConnection__addFile(mongoConnection, client->username, client->password, content, client->filePath);
+            printf("File opened\n");
 
-    writePacket(ssl, FILE_CREATED, NULL);
+            writePacket(ssl, FILE_CREATED, NULL);
+        }
+    } else {
+        writePacket(ssl, UNAUTHORIZED, NULL);
+    }
 }
 
 void FileSize(Client *client, ServerConfiguration *server, SSL * ssl, MongoConnection *mongoConnection, const char * content) {
-    client->fileSize = strtol(content, NULL, 10);
-    printf("File size is %d\n", client->fileSize);
+    if (verifyUser(client->username, client->password, mongoConnection)) {
+        client->fileSize = strtol(content, NULL, 10);
+        printf("File size is %d\n", client->fileSize);
+    } else {
+        writePacket(ssl, UNAUTHORIZED, NULL);
+    }
 }
 
 void FileContent(Client *client, ServerConfiguration *server, SSL * ssl, MongoConnection *mongoConnection, const char * content) {
@@ -104,99 +116,111 @@ void FileContent(Client *client, ServerConfiguration *server, SSL * ssl, MongoCo
 }
 
 void ReadFile(Client *client, ServerConfiguration *server, SSL * ssl, MongoConnection *mongoConnection, const char * content) {
-    printf("User %s requested to read file %s\n", client->username, content);
+    if (verifyUser(client->username, client->password, mongoConnection)) {
+        printf("User %s requested to read file %s\n", client->username, content);
 
-    const char * path = MongoConnection__getFilePath(mongoConnection, client->username, client->password, content);
+        const char *path = MongoConnection__getFilePath(mongoConnection, client->username, client->password, content);
 
-    struct dirent *dir, *dir2;
-    int fileCount = 0;
+        struct dirent *dir, *dir2;
+        int fileCount = 0;
 
-    DIR * d = opendir(path);
-    if (d) {
-        while ((dir = readdir(d)) != NULL)
-            if (dir->d_type == DT_REG) /* If the entry is a regular file */
-                fileCount++;
+        DIR *d = opendir(path);
+        if (d) {
+            while ((dir = readdir(d)) != NULL)
+                if (dir->d_type == DT_REG) /* If the entry is a regular file */
+                    fileCount++;
 
-        // Send file size in chunk count
-        writePacket(ssl, FILE_SIZE, fileCount);
+            // Send file size in chunk count
+            writePacket(ssl, FILE_SIZE, fileCount);
 
-        rewinddir(d);
+            rewinddir(d);
 
-        // TO FIX: STUCK HERE
-        while ((dir2 = readdir(d)) != NULL) {
-            if (dir2->d_type == DT_REG) {
-                char *filePath = malloc(sizeof(path) + sizeof(dir->d_name));
-                strcpy(filePath, path);
-                strcat(filePath, "/");
-                strcat(filePath, dir2->d_name);
+            // TO FIX: STUCK HERE
+            while ((dir2 = readdir(d)) != NULL) {
+                if (dir2->d_type == DT_REG) {
+                    char *filePath = malloc(sizeof(path) + sizeof(dir->d_name));
+                    strcpy(filePath, path);
+                    strcat(filePath, "/");
+                    strcat(filePath, dir2->d_name);
 
-                // Load file content into memory
-                FILE *file = fopen(filePath, "rb");
-                char *fileBuffer;
-                long fileLength;
+                    // Load file content into memory
+                    FILE *file = fopen(filePath, "rb");
+                    char *fileBuffer;
+                    long fileLength;
 
-                // jump to end of file
-                fseek(file, 0, SEEK_END);
-                // get offset (used for length)
-                fileLength = ftell(file);
+                    // jump to end of file
+                    fseek(file, 0, SEEK_END);
+                    // get offset (used for length)
+                    fileLength = ftell(file);
 
-                // go back to start of file
-                rewind(file);
+                    // go back to start of file
+                    rewind(file);
 
-                // allocate memory for the fileBuffer
-                fileBuffer = (char *) malloc(fileLength * sizeof(char));
-                // write file data to fileBuffer
-                fread(fileBuffer, 1, fileLength, file);
-                // close file
-                fclose(file);
+                    // allocate memory for the fileBuffer
+                    fileBuffer = (char *) malloc(fileLength * sizeof(char));
+                    // write file data to fileBuffer
+                    fread(fileBuffer, 1, fileLength, file);
+                    // close file
+                    fclose(file);
 
-                writePacket(ssl, FILE_CONTENT, fileBuffer);
+                    writePacket(ssl, FILE_CONTENT, fileBuffer);
+                }
             }
-        }
 
-        closedir(d);
+            closedir(d);
+        }
+    } else {
+        writePacket(ssl, UNAUTHORIZED, NULL);
     }
 }
 
 void DeleteFile(Client *client, ServerConfiguration *server, SSL * ssl, MongoConnection *mongoConnection, const char * content) {
-    printf("User %s requested to delete file %s\n", client->username, content);
+    if (verifyUser(client->username, client->password, mongoConnection)) {
+        printf("User %s requested to delete file %s\n", client->username, content);
 
-    const char * path = MongoConnection__getFilePath(mongoConnection, client->username, client->password, content);
+        const char *path = MongoConnection__getFilePath(mongoConnection, client->username, client->password, content);
 
-    printf("Deleting file %s\n", path);
-
-    struct dirent *dir;
-    DIR * d = opendir(path);
-    if (d) {
-        while ((dir = readdir(d)) != NULL) {
-            if (dir->d_type == DT_REG) {
-                char * fullPath = malloc(sizeof path + sizeof dir->d_name + 1);
-                strcpy(fullPath, path);
-                strcat(fullPath, "/");
-                strcat(fullPath, dir->d_name);
-                remove(fullPath);
-                free(fullPath);
-            }
+        if (path == NULL) {
+            writePacket(ssl, DELETE_ERROR, NULL);
+            return;
         }
 
-        rmdir(path);
+        printf("Deleting file %s\n", path);
 
-        MongoConnection__deleteFile(mongoConnection, client->username, client->password, path);
+        struct dirent *dir;
+        DIR *d = opendir(path);
+        if (d) {
+            while ((dir = readdir(d)) != NULL) {
+                if (dir->d_type == DT_REG) {
+                    char *fullPath = malloc(sizeof path + sizeof dir->d_name + 1);
+                    strcpy(fullPath, path);
+                    strcat(fullPath, "/");
+                    strcat(fullPath, dir->d_name);
+                    remove(fullPath);
+                    free(fullPath);
+                }
+            }
 
-        writePacket(ssl, FILE_DELETED, NULL);
+            rmdir(path);
+
+            MongoConnection__deleteFile(mongoConnection, client->username, client->password, path);
+
+            writePacket(ssl, FILE_DELETED, NULL);
+        } else {
+            writePacket(ssl, DELETE_ERROR, NULL);
+        }
     } else {
-        writePacket(ssl, DELETE_ERROR, NULL);
+        writePacket(ssl, UNAUTHORIZED, NULL);
     }
 }
 
 void ListFiles(Client *client, ServerConfiguration *server, SSL * ssl, MongoConnection *mongoConnection, const char * content) {
-    char writeBuffer[CHUNK_SIZE];
-    printf("User %s requested file listing\n", client->username);
-
     if (verifyUser(client->username, client->password, mongoConnection)) {
         printf("User %s requested file listing\n", client->username);
 
         char * files = MongoConnection__listFile(mongoConnection, client->username, client->password);
         writePacket(ssl, LIST_FILES, files);
+    } else {
+        writePacket(ssl, UNAUTHORIZED, NULL);
     }
 }

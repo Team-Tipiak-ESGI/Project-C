@@ -31,6 +31,7 @@ enum packet_type {
     USERNAME_RECEIVED = 0x66,
     PASSWORD_RECEIVED = 0x67,
     DELETE_ERROR = 0x68,
+    FILE_EXISTS = 0x69,
 
     LIST_FILES = 0x70, // Sent by the client to request a list of all the files currently held by the server
 };

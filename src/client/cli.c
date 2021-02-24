@@ -18,8 +18,10 @@ void cli(SSL*ssl) {
     char * username;
     char * password;
 
+    fputs("Type (h) for help.\n", stdout);
+
     while (1) {
-        fputs("Enter command: ", stdin);
+        fputs("> ", stdout);
         fgets(input, 1024, stdin);
 
         strtok(input, "\n"); // Remove line break
@@ -43,11 +45,11 @@ void cli(SSL*ssl) {
         else if (!strcmp(action, "h"))
             printf("Commands:\n"
                    "q: Quit\n"
+                   "h: Help (this)\n"
                    "u [username]: Set username\n"
                    "p [password]: Set password\n"
                    "l: Login\n"
                    "s: Signup\n"
-                   "h: Help (this)\n"
                    "ls: List files\n"
                    "dl [filename]: Download file\n"
                    "up [filename]: Upload file\n"
@@ -60,6 +62,8 @@ void cli(SSL*ssl) {
             deleteFile(ssl, value);
         else if (!strcmp(action, "ls"))
             listFiles(ssl);
+        else
+            printf("Unknown command, try (h) for help.\n");
     }
 
     free(input);

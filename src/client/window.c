@@ -352,7 +352,7 @@ int window_login(SSL *ssl) {
                     form_driver(form_signup, character);
                     break;
             }
-            wrefresh(((choices == 1) ? sub_win_signup_panel : sub_win_login_panel)));
+            wrefresh(((choices == 1) ? sub_win_signup_panel : sub_win_login_panel));
         }
         if (character == KEY_F(2) && choices == 0) {
             set_current_field(form_signup, field_signup[1]);

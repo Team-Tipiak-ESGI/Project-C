@@ -20,14 +20,13 @@
 #include "Connection.h"
 #include "SendFile.h"
 #include "window.h"
+#include "cli.h"
 #include "../shared/Configuration.h"
 
 
 int main(int argc, char** argv) {
     Item * config = Configuration__loadFromFile("resources/client.conf");
 
-    printf("%d\n", argc);
-    
     SSL_CTX *ctx;
     int server;
     SSL *ssl;
@@ -42,9 +41,13 @@ int main(int argc, char** argv) {
     if (SSL_connect(ssl) < 0) {   /* perform the connection */
         ERR_print_errors_fp(stderr);
     } else {
-        printf("Connected with %s encryption\n", SSL_get_cipher(ssl));
+        printf("Connected with %s encryption.\n", SSL_get_cipher(ssl));
 
-        window_login(ssl);
+        if (argc > 1 && !strcmp(argv[1], "gui")) {
+            window_login(ssl);
+        } else {
+            cli(ssl);
+        }
 
         SSL_free(ssl);        /* release connection state */
     }
