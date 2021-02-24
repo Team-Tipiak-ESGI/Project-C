@@ -68,6 +68,19 @@ void window_items(SSL *ssl){
     // creation items pour download
     //char ** list = listFiles(ssl);
 
+    char *list[] = {
+            "choice 1",
+            "choice 2",
+            "choice 3",
+            "choice 4",
+            "choice 5",
+            "choice 6",
+            "choice 7",
+            "choice 8",
+            "exit",
+            (char *)NULL;
+    };
+
     download_choices = ARRAY_SIZE(list);
     fichiersDownload = (ITEM **)calloc(download_choices, sizeof(ITEM *));
     // insertion des fichiers dans une liste
@@ -201,14 +214,14 @@ int window_login(SSL *ssl) {
     //label pass
     set_field_opts(field_signup[2], O_AUTOSKIP | O_PUBLIC | O_VISIBLE);
     // pass
-    set_field_opts(field_signup[3], O_VISIBLE | O_ACTIVE | O_EDIT);
+    set_field_opts(field_signup[3], O_VISIBLE | O_ACTIVE | O_EDIT | O_PUBLIC);
     field_opts_off(field_signup[3], O_NULLOK);
     set_field_back(field_signup[3], A_UNDERLINE);
     set_field_type(field_signup[3], TYPE_ALNUM);
     //label pass confirm
-    set_field_opts(field_signup[4], O_AUTOSKIP | O_PUBLIC | O_VISIBLE);
+    set_field_opts(field_signup[4], O_AUTOSKIP | O_PUBLIC | O_VISIBLE );
     // pass confirm
-    set_field_opts(field_signup[5], O_VISIBLE | O_ACTIVE | O_EDIT);
+    set_field_opts(field_signup[5], O_VISIBLE | O_ACTIVE | O_EDIT | O_PUBLIC);
     // field_opts_off(field_signup[5], O_PUBLIC);
     set_field_back(field_signup[5], A_UNDERLINE);
     set_field_type(field_signup[5], TYPE_ALNUM);
@@ -264,7 +277,7 @@ int window_login(SSL *ssl) {
     //label pass
     set_field_opts(field_login[2], O_AUTOSKIP | O_PUBLIC | O_VISIBLE);
     // pass
-    set_field_opts(field_login[3], O_VISIBLE | O_ACTIVE | O_EDIT);
+    set_field_opts(field_login[3], O_VISIBLE | O_ACTIVE | O_EDIT | O_PUBLIC);
     field_opts_off(field_login[3], O_NULLOK);
     set_field_back(field_login[3], A_UNDERLINE);
     set_field_type(field_login[3], TYPE_ALNUM);
