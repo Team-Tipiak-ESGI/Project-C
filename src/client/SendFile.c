@@ -233,11 +233,16 @@ int login(SSL *ssl, const char* username, const char* password) {
 
     while (state < 3) {
         SSL_read(ssl, readBuffer, CHUNK_SIZE);
-        if (readBuffer[0] == LOGGED_IN || readBuffer[0] == USERNAME_RECEIVED || readBuffer[0] == PASSWORD_RECEIVED) state++;
-        else return 0;
+        if (readBuffer[0] == LOGGED_IN) {
+            printf("Successfully logged in!\n");
+            return 1;
+        } else if (readBuffer[0] == UNAUTHORIZED) {
+            printf("Bad username or password!\n");
+            return 0;
+        }
+        else if (readBuffer[0] != USERNAME_RECEIVED && readBuffer[0] != PASSWORD_RECEIVED) return 0;
     }
 
-    printf("Successfully logged in!\n");
     return 1;
 }
 
