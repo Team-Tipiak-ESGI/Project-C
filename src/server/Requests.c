@@ -68,16 +68,19 @@ void CreateUser(Client *client, ServerConfiguration *server, SSL * ssl, MongoCon
 // TODO: Verify if file does not exists
 void CreateFile(Client *client, ServerConfiguration *server, SSL * ssl, MongoConnection *mongoConnection, const char * content) {
     if (verifyUser(client->username, client->password, mongoConnection)) {
-        if (MongoConnection__getFilePath(mongoConnection, client->username, client->password, content) != NULL) {
-            writePacket(ssl, FILE_EXISTS, NULL);
-        } else {
-            client->filePath = createFile(client->username, client->password, content, server->rootDir);
+        client->filePath = createFile(client->username, client->password, content, server->rootDir);
+
+        // If not already in database
+        //if (MongoConnection__getFilePath(mongoConnection, client->username, client->password, content) == NULL) {
+
             // Save real name (sent by the client) and hashed name (the one on the server) in the database
             MongoConnection__addFile(mongoConnection, client->username, client->password, content, client->filePath);
-            printf("File opened\n");
 
-            writePacket(ssl, FILE_CREATED, NULL);
-        }
+        //}
+
+        printf("File opened.\n");
+
+        writePacket(ssl, FILE_CREATED, NULL);
     } else {
         writePacket(ssl, UNAUTHORIZED, NULL);
     }
@@ -108,6 +111,7 @@ void FileContent(Client *client, ServerConfiguration *server, SSL * ssl, MongoCo
             printf("User %s sent file data\n", client->username);
         } else {
             printf("No file is currently open\n");
+            writePacket(ssl, UNKNOWN_ERROR, NULL);
         }
     } else {
         writePacket(ssl, UNAUTHORIZED, NULL);

@@ -2,19 +2,17 @@
 #include <stdlib.h>
 #include <string.h>
 
-#if defined (linux) /* Linux */
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h> /* close */
+#include <netdb.h> /* gethostbyname */
 
-    #include <sys/socket.h>
-    #include <netinet/in.h>
-    #include <arpa/inet.h>
-    #include <unistd.h> /* close */
-    #include <netdb.h> /* gethostbyname */
+#include <openssl/crypto.h>
+#include <openssl/ssl.h>
+#include <pwd.h>
 
-    #include <openssl/crypto.h>
-    #include <openssl/ssl.h>
-    #include <openssl/err.h>
-
-#endif
+#include <openssl/err.h>
 
 #include "../shared/ChunkSize.h"
 
@@ -27,24 +25,49 @@
 #include "Database.h"
 
 int main(void) {
-    Item * config = Configuration__loadFromFile("resources/server.conf");
+    struct passwd *pw = getpwuid(getuid());
+    char *tucsDir = pw->pw_dir;
+    strcat(tucsDir, "/.tucs");
+
+    struct stat st = {0};
+    if (stat(tucsDir, &st) == -1) {
+        mkdir(tucsDir, 0700);
+        printf("Creating ~/.tucs directory. Full path: [%s]", tucsDir);
+    }
+
+    char *confPath = malloc(strlen(tucsDir) + 13);
+    strcpy(confPath, tucsDir);
+    strcat(confPath, "/");
+    strcat(confPath, "tucs.conf");
+
+    Item * config = Configuration__loadFromFile(confPath);
 
     ServerConfiguration serverConfiguration;
     serverConfiguration.port = atoi(Item__getByKey(config, "port")->value);
-    serverConfiguration.rootDir = Item__getByKey(config, "rootDir")->value;
+
+    char * rootDir = Item__getByKey(config, "rootDir")->value;
+    serverConfiguration.rootDir = malloc(strlen(tucsDir) + strlen(rootDir) + 3);
+    strcpy(serverConfiguration.rootDir, tucsDir);
+    strcat(serverConfiguration.rootDir, "/");
+    strcat(serverConfiguration.rootDir, rootDir);
+    strcat(serverConfiguration.rootDir, "/");
+
+    // Create directory if not exists
+    if (stat(serverConfiguration.rootDir, &st) == -1) {
+        mkdir(serverConfiguration.rootDir, 0700);
+    }
 
     SSL_CTX *ctx;
     int server;
 
-    char currentDirectory[1024] = {0};
-    getcwd(currentDirectory, 1024);
-
     char certFile[1024] = {0};
-    strcpy(certFile, currentDirectory);
+    strcpy(certFile, tucsDir);
+    strcat(certFile, "/");
     strcat(certFile, Item__getByKey(config, "certFile")->value);
 
     char keyFile[1024] = {0};
-    strcpy(keyFile, currentDirectory);
+    strcpy(keyFile, tucsDir);
+    strcat(keyFile, "/");
     strcat(keyFile, Item__getByKey(config, "keyFile")->value);
 
     SSL_library_init();

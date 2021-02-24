@@ -55,6 +55,8 @@ void loadCertificates(SSL_CTX *ctx, char *certFile, char *keyFile) {
     //New lines
     if (SSL_CTX_load_verify_locations(ctx, certFile, keyFile) != 1) {
         ERR_print_errors_fp(stderr);
+        printf("Cert files not found. Please read the doc to create them.\n");
+        exit(EXIT_FAILURE);
     }
 
     if (SSL_CTX_set_default_verify_paths(ctx) != 1) {

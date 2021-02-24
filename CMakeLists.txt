@@ -47,6 +47,3 @@ target_link_libraries( TUCS_client ${CURSES_LIBRARIES} )
 target_link_libraries(TUCS_server /usr/lib/x86_64-linux-gnu/libmongoc-1.0.so.0 /usr/lib/x86_64-linux-gnu/libbson-1.0.so.0)
 target_link_libraries(TUCS_client /usr/lib/x86_64-linux-gnu/libpanel.so)
 target_link_libraries(TUCS_client /usr/lib/x86_64-linux-gnu/libmenu.so)
-
-
-file(COPY resources DESTINATION .)

@@ -13,7 +13,7 @@ cmake CMakeLists.txt
 - Générer un certificat ssl avec
 ```sh
 cd TUCS_directory
-openssl req  -nodes -new -x509 -keyout resources/server.key -out resources/server.cert
+openssl req  -nodes -new -x509 -keyout ~/.tucs/tucs.key -out ~/.tucs/tucs.cert
 ```
 - Installer une base de données MongoDB
 

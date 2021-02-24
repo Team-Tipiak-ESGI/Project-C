@@ -25,6 +25,12 @@ int sendFileToSocket(SSL *ssl, const char* filename) {
 
     // Open file in binary mode
     filePtr = fopen(filename, "rb");
+
+    if (filePtr == NULL) {
+        printf("File does not exists.\n");
+        return 0;
+    }
+
     // Jump to end of file
     fseek(filePtr, 0, SEEK_END);
     // Get offset (used for length)

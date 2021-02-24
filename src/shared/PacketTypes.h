@@ -34,4 +34,6 @@ enum packet_type {
     FILE_EXISTS = 0x69,
 
     LIST_FILES = 0x70, // Sent by the client to request a list of all the files currently held by the server
+
+    UNKNOWN_ERROR = 0x71,
 };

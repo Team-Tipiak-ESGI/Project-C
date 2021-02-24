@@ -23,9 +23,27 @@
 #include "cli.h"
 #include "../shared/Configuration.h"
 
+#include <pwd.h>
+#include <sys/stat.h>
+
 
 int main(int argc, char** argv) {
-    Item * config = Configuration__loadFromFile("resources/client.conf");
+    struct passwd *pw = getpwuid(getuid());
+    char *tucsDir = pw->pw_dir;
+    strcat(tucsDir, "/.tucs");
+
+    struct stat st = {0};
+    if (stat(tucsDir, &st) == -1) {
+        mkdir(tucsDir, 0700);
+        printf("Creating ~/.tucs directory. Full path: [%s]", tucsDir);
+    }
+
+    char *confPath = malloc(strlen(tucsDir) + 13);
+    strcpy(confPath, tucsDir);
+    strcat(confPath, "/");
+    strcat(confPath, "tucs.conf");
+
+    Item * config = Configuration__loadFromFile(confPath);
 
     SSL_CTX *ctx;
     int server;

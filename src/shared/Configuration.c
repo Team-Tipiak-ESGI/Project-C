@@ -4,9 +4,6 @@
 #include <string.h>
 
 Item * Configuration__loadFromFile(char * filepath) {
-    Item *item = malloc(sizeof(Item));
-    item->next = NULL;
-
     // Read file
     FILE* file;
     char* buffer;
@@ -14,6 +11,17 @@ Item * Configuration__loadFromFile(char * filepath) {
 
     // open file in binary mode
     file = fopen(filepath, "rb");
+
+    if (file == NULL) {
+        printf("Config file not found, creating it...\n");
+        file = fopen(filepath, "wb");
+
+        fputs("port:8100\naddress:localhost\nrootDir:server\ncertFile:tucs.cert\nkeyFile:tucs.key\ndbURI:mongodb://localhost:27017\0", file);
+
+        fclose(file);
+
+        file = fopen(filepath, "rb");
+    }
 
     // jump to end of file
     fseek(file, 0, SEEK_END);
@@ -31,6 +39,9 @@ Item * Configuration__loadFromFile(char * filepath) {
 
     // Load config
     char * tok = buffer;
+
+    Item *item = malloc(sizeof(Item));
+    item->next = NULL;
 
     // Print the file list
     while ((tok = strtok(tok, "\r\n")) != NULL) {
