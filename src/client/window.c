@@ -79,11 +79,12 @@ void window_items(SSL *ssl){
     //<------------------ DOWNLOAD ---------------------->
 
     // creation items pour download
-    download_choices = ARRAY_SIZE(listFiles(ssl));
+    char ** list = listFiles(ssl);
+    download_choices = ARRAY_SIZE(list);
     fichiersDownload = (ITEM **)calloc(download_choices, sizeof(ITEM *));
     // insertion des fichiers dans une liste
     for (int i = 0; i < download_choices; ++i) {
-        fichiersDownload[i] = new_item(listFiles(ssl)[i], listFiles(ssl)[i]);
+        fichiersDownload[i] = new_item(list[i], list[i]);
     }
 
     // creation du menu
