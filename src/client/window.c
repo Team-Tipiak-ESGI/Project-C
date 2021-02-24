@@ -48,12 +48,12 @@ static char* trim_whitespaces(char *str)
 }
 
 void window_items(SSL *ssl){
+
     ITEM **fichiersUpload, **fichiersDownload;
     int character, download_choices, upload_choices;
     MENU *menu_fichiers_upload, *menu_fichiers_download;
-    WINDOW *win_left_panel, *win_top_panel, *win_upload_panel, *sub_win_upload_panel,
+    WINDOW  *win_upload_panel, *sub_win_upload_panel,
             *win_download_panel, *sub_win_download_panel;
-    PANEL *panel_main[3];
 
     //init ecran et fenetres
     initscr();
@@ -61,19 +61,6 @@ void window_items(SSL *ssl){
     cbreak(); //pas de line buffering, tout sera passe au programme
     keypad(stdscr, TRUE); // touches fonctions
     noecho(); // pas de texte au clavier quand on fait des input;
-
-    // creation des windows avant entree dans les panels
-    win_left_panel = newwin(LINES, RATIOX, 0, 0); // left panel
-    win_top_panel = newwin(RATIOY, COLS, 0, 0); // top panel
-
-    // box autour des win_*_panels
-    box(win_top_panel, 0, 0);
-    box(win_left_panel, 0, 0);
-
-    // mise dans des panels
-    panel_main[0] = new_panel(win_left_panel);
-    panel_main[1] = new_panel(win_top_panel);
-    panel_main[2] = NULL;
 
 
     //<------------------ DOWNLOAD ---------------------->
@@ -91,8 +78,8 @@ void window_items(SSL *ssl){
     menu_fichiers_download = new_menu((ITEM **)fichiersDownload);
 
     //creation fenetres
-    win_download_panel = newwin(20, 76, (LINES + 15) / 2, (COLS - 76) / 2); // password_panel
-    sub_win_download_panel = derwin(win_download_panel, 15, 70, 3, 3);
+    win_download_panel = newwin(LINES, COLS, 0, 0); // password_panel
+    sub_win_download_panel = derwin(win_download_panel, LINES - 2 , COLS - 2, 3, 3);
 
     // ajout box et controle keypad
     box(win_download_panel, 0, 0);
@@ -102,18 +89,17 @@ void window_items(SSL *ssl){
 
     //placement fenetres qui vont se placer dans le menu
     set_menu_win(menu_fichiers_download, sub_win_download_panel);
-    set_menu_sub(menu_fichiers_download, derwin(sub_win_download_panel,10, 60, 2, 2));
+    set_menu_sub(menu_fichiers_download, derwin(sub_win_download_panel,LINES - 4, COLS - 4, 2, 2));
     set_menu_format(menu_fichiers_download, 5, 1);
 
     //ajout markeur pour dire si le fichier a ete pointe ou non
     set_menu_mark(menu_fichiers_download," * ");
 
     // modification des param avant pubage du menu
-    box(menu_fichiers_download, 0,0);
     post_menu(menu_fichiers_download);
     wrefresh(win_download_panel);
 
-    while ((character == wgetch(sub_win_download_panel)) != KEY_F(4)){
+    while ((character = wgetch(sub_win_download_panel)) != KEY_F(4)){
         switch (character) {
             case KEY_DOWN:
                 menu_driver(menu_fichiers_download, REQ_DOWN_ITEM);
@@ -386,8 +372,12 @@ int window_login(SSL *ssl) {
 
         if (choices == 1 && (character == 10 || character == KEY_ENTER)) {
 
-            if (!strcmp(field_signup[3], field_signup[5]))
-                if (signup(ssl, field_signup[1], field_signup[3]))
+            const char * usr_su = trim_whitespaces(field_buffer(field_signup[1], 0));
+            const char * usr_pw = trim_whitespaces(field_buffer(field_signup[3], 0));
+            const char * usr_pw_cfr = trim_whitespaces(field_buffer(field_signup[5], 0));
+
+            if (!strcmp(usr_pw, usr_pw_cfr))
+                if (signup(ssl, usr_su, usr_pw))
                     break;
 
         } else if (choices == 0 && (character == 10 || character == KEY_ENTER)) {
