@@ -66,7 +66,8 @@ void window_items(SSL *ssl){
     //<------------------ DOWNLOAD ---------------------->
 
     // creation items pour download
-    char ** list = listFiles(ssl);
+    //char ** list = listFiles(ssl);
+
     download_choices = ARRAY_SIZE(list);
     fichiersDownload = (ITEM **)calloc(download_choices, sizeof(ITEM *));
     // insertion des fichiers dans une liste
@@ -90,7 +91,7 @@ void window_items(SSL *ssl){
     //placement fenetres qui vont se placer dans le menu
     set_menu_win(menu_fichiers_download, sub_win_download_panel);
     set_menu_sub(menu_fichiers_download, derwin(sub_win_download_panel,LINES - 4, COLS - 4, 2, 2));
-    set_menu_format(menu_fichiers_download, 5, 1);
+    //set_menu_format(menu_fichiers_download, 5, 1);
 
     //ajout markeur pour dire si le fichier a ete pointe ou non
     set_menu_mark(menu_fichiers_download," * ");
@@ -201,14 +202,14 @@ int window_login(SSL *ssl) {
     set_field_opts(field_signup[2], O_AUTOSKIP | O_PUBLIC | O_VISIBLE);
     // pass
     set_field_opts(field_signup[3], O_VISIBLE | O_ACTIVE | O_EDIT);
-    field_opts_off(field_signup[3], O_PUBLIC | O_NULLOK);
+    field_opts_off(field_signup[3], O_NULLOK);
     set_field_back(field_signup[3], A_UNDERLINE);
     set_field_type(field_signup[3], TYPE_ALNUM);
     //label pass confirm
     set_field_opts(field_signup[4], O_AUTOSKIP | O_PUBLIC | O_VISIBLE);
     // pass confirm
     set_field_opts(field_signup[5], O_VISIBLE | O_ACTIVE | O_EDIT);
-    field_opts_off(field_signup[5], O_PUBLIC);
+    // field_opts_off(field_signup[5], O_PUBLIC);
     set_field_back(field_signup[5], A_UNDERLINE);
     set_field_type(field_signup[5], TYPE_ALNUM);
 
@@ -264,7 +265,7 @@ int window_login(SSL *ssl) {
     set_field_opts(field_login[2], O_AUTOSKIP | O_PUBLIC | O_VISIBLE);
     // pass
     set_field_opts(field_login[3], O_VISIBLE | O_ACTIVE | O_EDIT);
-    field_opts_off(field_login[3], O_PUBLIC | O_NULLOK);
+    field_opts_off(field_login[3], O_NULLOK);
     set_field_back(field_login[3], A_UNDERLINE);
     set_field_type(field_login[3], TYPE_ALNUM);
 
