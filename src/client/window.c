@@ -337,7 +337,8 @@ int window_login(SSL *ssl) {
                     form_driver(form_login, REQ_END_LINE);
                     break;
                 default:
-                    form_driver(form_login, character);
+                    if (character != 10)
+                        form_driver(form_login, character);
                     break;
             }
         } else {
@@ -374,8 +375,10 @@ int window_login(SSL *ssl) {
                     form_driver(form_signup, REQ_END_LINE);
                     break;
                 default:
-                    form_driver(form_signup, character);
+                    if (character != 10)
+                        form_driver(form_signup, character);
                     break;
+
             }
             wrefresh(((choices == 1) ? sub_win_signup_panel : sub_win_login_panel));
         }
