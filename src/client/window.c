@@ -24,12 +24,11 @@
 // permet de determiner la taille du tableau en divisant la taille max du tab par le ptr = 0 du dit tableau
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 
-static char* trim_whitespaces(char *str)
-{
+static char* trim_whitespaces(char *str) {
     char *end;
 
     // trim leading space
-    while(*str == 32)
+    while (*str == 32)
         str++;
 
     if(*str == 0) // all spaces?
@@ -38,7 +37,7 @@ static char* trim_whitespaces(char *str)
     // trim trailing space
     end = str + strnlen(str, 128) - 1;
 
-    while(end > str && *end == 32)
+    while (end > str && *end == 32)
         end--;
 
     // write new null terminator
@@ -78,7 +77,7 @@ void window_items(SSL *ssl){
             "choice 7",
             "choice 8",
             "exit",
-            (char *)NULL;
+            (char *)NULL,
     };
 
     download_choices = ARRAY_SIZE(list);
